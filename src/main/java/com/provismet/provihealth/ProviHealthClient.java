@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.provismet.provihealth.api.ProviHealthApi;
 import com.provismet.provihealth.config.Options;
+import com.provismet.provihealth.hud.BorderRegistry;
 import com.provismet.provihealth.hud.TargetHealthBar;
 import com.provismet.provihealth.particle.Particles;
 
@@ -36,6 +37,7 @@ public class ProviHealthClient implements ClientModInitializer {
                 }
             }
         );
+        BorderRegistry.sortTitles();
 
         Options.load();
         Particles.register();

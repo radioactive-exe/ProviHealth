@@ -3,7 +3,6 @@ package com.provismet.provihealth.compat;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.api.ProviHealthApi;
 
-import net.minecraft.entity.EntityType;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.EntityTypeTags;
 

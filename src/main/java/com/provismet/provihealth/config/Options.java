@@ -58,6 +58,7 @@ public class Options {
     public static Vector3f unpackedStartHud = Vec3d.unpackRgb(hudStartColour).toVector3f();
     public static Vector3f unpackedEndHud = Vec3d.unpackRgb(hudEndColour).toVector3f();
     public static boolean hudGradient = false;
+    public static boolean hudTitles = true;
 
     public static boolean showTextInWorld = true;
     public static float maxRenderDistance = 24f;
@@ -70,6 +71,7 @@ public class Options {
     public static boolean overrideLabels = false;
     public static boolean worldShadows = true;
     public static float worldOffsetY = 0f;
+    public static boolean worldTitles = true;
 
     public static boolean spawnDamageParticles = true;
     public static boolean spawnHealingParticles = false;
@@ -163,10 +165,12 @@ public class Options {
             .append("playerTarget", playersVisibilityOverride).newLine()
             .append("otherHealth", others.name()).newLine()
             .append("otherTarget", othersVisibilityOverride).newLine()
+            .append("worldTitles", worldTitles).newLine()
             .append("bossHUD", bossHUD.name()).newLine()
             .append("hostileHUD", hostileHUD.name()).newLine()
             .append("playerHUD", playerHUD.name()).newLine()
             .append("otherHUD", otherHUD.name()).newLine()
+            .append("hudTitles", hudTitles).newLine()
             .append("damageParticles", spawnDamageParticles).newLine()
             .append("healingParticles", spawnHealingParticles).newLine()
             .append("damageColour", damageColour).newLine()
@@ -319,6 +323,10 @@ public class Options {
                         playersVisibilityOverride = parser.nextBoolean();
                         break;
 
+                    case "worldTitles":
+                        worldTitles = parser.nextBoolean();
+                        break;
+
                     case "playerHUD":
                         playerHUD = HUDType.valueOf(parser.nextString());
                         break;
@@ -333,6 +341,10 @@ public class Options {
 
                     case "otherHUD":
                         otherHUD = HUDType.valueOf(parser.nextString());
+                        break;
+
+                    case "hudTitles":
+                        hudTitles = parser.nextBoolean();
                         break;
 
                     case "damageParticles":

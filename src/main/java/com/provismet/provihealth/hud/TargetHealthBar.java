@@ -27,6 +27,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
+import java.util.List;
+
 public class TargetHealthBar implements HudRenderCallback {
     public static boolean disabledLabels = false;
 
@@ -149,8 +151,30 @@ public class TargetHealthBar implements HudRenderCallback {
 
                     if (expectedLeftPixel < armourX) expectedLeftPixel = armourX + 10;
 
-                    int mountHealthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, mountHealthString, expectedLeftPixel, BAR_Y + BAR_HEIGHT + (vehicleMaxHealthDeep > 0f ? MOUNT_BAR_HEIGHT : 0) + 2, 0xFFFFFF, true);
+                    int mountHealthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, mountHealthString, expectedLeftPixel, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT + 2, 0xFFFFFF, true);
                     drawContext.drawTexture(MOUNT_HEART, mountHealthX, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT + 1, 9, 9, 0f, 0f, 9, 9, 9, 9);
+                }
+
+                // Render titles on HUD
+                if (Options.hudTitles) {
+                    List<Text> titles = BorderRegistry.getTitle(this.target, false, true).reversed();
+
+                    int titleX = 5;
+                    int titleY = OFFSET_Y + FRAME_LENGTH + 5;
+
+                    if (Options.hudPosition == HUDPosition.LEFT) {
+                        for (Text title : titles) {
+                            drawContext.drawText(MinecraftClient.getInstance().textRenderer, title, titleX, titleY, 0xFFFFFF, true);
+                            titleY += 10;
+                        }
+                    }
+                    else {
+                        for (Text title : titles) {
+                            titleX = MinecraftClient.getInstance().getWindow().getScaledWidth() - 10 - MinecraftClient.getInstance().textRenderer.getWidth(title);
+                            drawContext.drawText(MinecraftClient.getInstance().textRenderer, title, titleX, titleY, 0xFFFFFF, true);
+                            titleY += 10;
+                        }
+                    }
                 }
             }
             

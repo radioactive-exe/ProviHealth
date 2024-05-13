@@ -1,6 +1,8 @@
 package com.provismet.provihealth.api;
 
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -208,5 +210,23 @@ public interface ProviHealthApi {
      */
     public default boolean registerPortrait (EntityType<?> type, @Nullable Identifier resource, int priority) {
         return BorderRegistry.registerBorder(type, resource, priority);
+    }
+
+    /**
+     * Registers a function that places text on the healthbars or the HUD.
+     * Text can be used to place additional information about an entity on the HUD or the in-world healthbar.
+     * Text appears line-by-line on the HUD and in-world healthbar. Separate lines should be registered separately.
+     * The lambda is given context for whether it is appearing on the in-world or the HUD render.
+     *
+     * @param titleLambda Function of (LivingEntity entity, boolean isWorld, boolean isHUD) -> Text. Should return null if no text is wanted.
+     * @param order Determines the order of this line of text. Higher numbers appear at the top.
+     */
+    public default void registerTitle (TitleGenerator titleLambda, int order) {
+        BorderRegistry.registerTitle(titleLambda, order);
+    }
+
+    @FunctionalInterface
+    public interface TitleGenerator {
+        public Text apply (LivingEntity entity, boolean isWorld, boolean isHUD);
     }
 }

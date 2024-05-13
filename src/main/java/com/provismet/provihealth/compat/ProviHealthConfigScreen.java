@@ -76,6 +76,13 @@ public class ProviHealthConfigScreen {
             .build()
         );
 
+        hud.addEntry(entryBuilder.startBooleanToggle(Text.translatable("entry.provihealth.hudTitles"), Options.hudTitles)
+            .setDefaultValue(true)
+            .setTooltip(Text.translatable("tooltip.provihealth.hudTitles"))
+            .setSaveConsumer(newValue -> Options.hudTitles = newValue)
+            .build()
+        );
+
         hud.addEntry(entryBuilder.startBooleanToggle(Text.translatable("entry.provihealth.gradient"), Options.hudGradient)
             .setDefaultValue(false)
             .setTooltip(Text.translatable("tooltip.provihealth.gradient"))
@@ -178,6 +185,13 @@ public class ProviHealthConfigScreen {
         health.addEntry(entryBuilder.startFloatField(Text.translatable("entry.provihealth.worldOffsetY"), Options.worldOffsetY)
             .setDefaultValue(0f)
             .setSaveConsumer(newValue -> Options.worldOffsetY = newValue)
+            .build()
+        );
+
+        health.addEntry(entryBuilder.startBooleanToggle(Text.translatable("entry.provihealth.worldTitles"), Options.worldTitles)
+            .setDefaultValue(true)
+            .setTooltip(Text.translatable("tooltip.provihealth.worldTitles"))
+            .setSaveConsumer(newValue -> Options.worldTitles = newValue)
             .build()
         );
 

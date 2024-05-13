@@ -8,6 +8,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.SeeThroughText;
+import com.provismet.provihealth.hud.BorderRegistry;
 import com.provismet.provihealth.interfaces.IMixinLivingEntity;
 import com.provismet.provihealth.util.Visibility;
 
@@ -30,6 +31,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+
+import java.util.List;
 
 public class EntityHealthBar {
     private static final Identifier BARS = ProviHealthClient.identifier("textures/gui/healthbars/in_world.png");
@@ -107,52 +110,79 @@ public class EntityHealthBar {
             Matrix4f textModel = matrices.peek().getPositionMatrix();
             final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
             final String healthString = String.format("%d/%d", Math.round(target.getHealth()), Math.round(target.getMaxHealth()));
+            final float lineHeight = 9;
+
+            List<Text> titles = List.of(); // initialise an empty list
+            if (Options.worldTitles) titles = BorderRegistry.getTitle(target, true, false);
 
             if (Options.overrideLabels) {
                 final Text targetName = getName(target);
                 final float targetNameWidth = textRenderer.getWidth(targetName);
 
-                float healthX = 50f - textRenderer.getWidth(healthString);
-                final float healthY = -9;
-                float nameX = -50;
-                float nameY = -9;
-                boolean wrapLines = targetNameWidth - 50f > healthX - 2f;
+                // 0 is in the centre.
+                final float leftmost = -50f;
+                final float rightmost = -leftmost;
+
+                float healthX = rightmost - textRenderer.getWidth(healthString);
+                final float healthY = -lineHeight;
+                float nameX = leftmost;
+                float nameY = -lineHeight;
+                boolean wrapLines = targetNameWidth - rightmost > healthX - 2f;
 
                 if (wrapLines) {
                     healthX = (healthX - 50) / 2f;
                     nameX = -targetNameWidth / 2f;
-                    nameY -= 9;
+                    nameY -= lineHeight;
                 }
 
-                if (target.shouldRenderName() && !target.isSneaky() && Options.seeThroughTextType != SeeThroughText.NONE) {
+                if ((target.shouldRenderName() || (target.hasCustomName() && target == MinecraftClient.getInstance().targetedEntity)) && !target.isSneaky() && Options.seeThroughTextType != SeeThroughText.NONE) {
                     if (Options.seeThroughTextType == SeeThroughText.STANDARD) {
                         if (Options.worldShadows) {
-                            textRenderer.draw(targetName, nameX + 1, nameY + 1, 0x404040, false, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
-                            textRenderer.draw(healthString, healthX + 1, healthY + 1, 0x404040, false, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
+                            EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX + 1, nameY + 1, healthX + 1, healthY + 1, lineHeight, 1, 0x404040, false, textModel, vertexConsumers, TextLayerType.NORMAL, light);
                         }
 
                         matrices.translate(0, 0, 0.03f);
                         textModel = matrices.peek().getPositionMatrix();
-                        textRenderer.draw(targetName, nameX, nameY, 0xFFFFFF, false, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
-                        textRenderer.draw(healthString, healthX, healthY, 0xFFFFFF, false, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+                        EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFF, false, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, light);
                     }
                     else {
-                        textRenderer.draw(targetName, nameX, nameY, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
-                        textRenderer.draw(healthString, healthX, healthY, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, 0, light);
+                        EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, light);
                     }
                 }
                 else {
-                    textRenderer.draw(targetName, nameX, nameY, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
-                    textRenderer.draw(healthString, healthX, healthY, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
+                    EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, light);
                 }
             }
-            else textRenderer.draw(healthString, -(textRenderer.getWidth(healthString)) / 2f, -10, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
+            else {
+                textRenderer.draw(healthString, -(textRenderer.getWidth(healthString)) / 2f, -lineHeight, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
+
+                float titleX;
+                float titleY = -lineHeight;
+                for (Text title : titles) {
+                    titleX = -textRenderer.getWidth(title) / 2f;
+                    titleY -= lineHeight;
+                    textRenderer.draw(title, titleX, titleY, 0xFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
+                }
+            }
             matrices.pop();
         }
 
         RenderSystem.disableBlend();
         RenderSystem.disableDepthTest();
         matrices.pop();
+    }
+
+    private static void renderFullText (TextRenderer textRenderer, Text name, String health, List<Text> titles, float nameX, float nameY, float healthX, float healthY, float titleLineHeight, float titleLineOffset, int colour, boolean shadow, Matrix4f model, VertexConsumerProvider vertexes, TextLayerType layerType, int light) {
+        textRenderer.draw(name, nameX, nameY, colour, shadow, model, vertexes, layerType, 0, light);
+        textRenderer.draw(health, healthX, healthY, colour, shadow, model, vertexes, layerType, 0, light);
+
+        float titleX;
+        float titleY = nameY;
+        for (Text title : titles) {
+            titleX = titleLineOffset - (textRenderer.getWidth(title) / 2f);
+            titleY -= titleLineHeight;
+            textRenderer.draw(title, titleX, titleY, colour, shadow, model, vertexes, layerType, 0, light);
+        }
     }
 
     @SuppressWarnings("resource")

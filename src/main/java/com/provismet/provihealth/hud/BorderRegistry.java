@@ -1,8 +1,13 @@
 package com.provismet.provihealth.hud;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 
+import com.provismet.provihealth.api.ProviHealthApi;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 import com.provismet.provihealth.ProviHealthClient;
@@ -20,6 +25,8 @@ public class BorderRegistry {
     private static final HashMap<TagKey<EntityType<?>>, ItemPriority> tagIconPriorities = new HashMap<>();
     private static final HashMap<EntityType<?>, BorderPriority> typeBorderPriorities = new HashMap<>();
     private static final HashMap<EntityType<?>, ItemPriority> typeIconPriorities = new HashMap<>();
+
+    private static final List<TitlePriority> orderedTitles = new ArrayList<>();
 
     private static final Identifier DEFAULT = ProviHealthClient.identifier("textures/gui/healthbars/default.png");
 
@@ -71,6 +78,19 @@ public class BorderRegistry {
         return true;
     }
 
+    public static void registerTitle (ProviHealthApi.TitleGenerator titleGen, int order) {
+        orderedTitles.add(new TitlePriority(titleGen, order));
+    }
+
+    public static void sortTitles () {
+        orderedTitles.sort(new Comparator<TitlePriority>() {
+            @Override
+            public int compare (TitlePriority a, TitlePriority b) {
+                return a.order() - b.order();
+            }
+        });
+    }
+
     public static Identifier getBorder (@Nullable LivingEntity entity) {
         if (entity == null || !Options.useCustomHudPortraits) return DEFAULT;
         else {
@@ -118,6 +138,14 @@ public class BorderRegistry {
         return bestIcon;
     }
 
+    public static List<Text> getTitle (LivingEntity entity, boolean world, boolean hud) {
+        if (entity == null) return null;
+
+        List<Text> titles = orderedTitles.stream().map(title -> title.titleGetter().apply(entity, world, hud)).filter(title -> title != null).toList();
+        return titles;
+    }
+
     private record ItemPriority (ItemStack itemStack, int priority) {}
     private record BorderPriority (Identifier borderId, int priority) {}
+    private record TitlePriority (ProviHealthApi.TitleGenerator titleGetter, int order) {}
 }
