@@ -17,7 +17,6 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
 
@@ -109,9 +108,9 @@ public class TextParticle extends SpriteBillboardParticle {
 
         Quaternionf quaternionf = camera.getRotation();
         Vec3d cameraPos = camera.getPos();
-        float dX = (float)(MathHelper.lerp((double)tickDelta, this.prevPosX, this.x) - cameraPos.getX());
-        float dY = (float)(MathHelper.lerp((double)tickDelta, this.prevPosY, this.y) - cameraPos.getY());
-        float dZ = (float)(MathHelper.lerp((double)tickDelta, this.prevPosZ, this.z) - cameraPos.getZ());
+        float dX = (float)(MathHelper.lerp(tickDelta, this.prevPosX, this.x) - cameraPos.getX());
+        float dY = (float)(MathHelper.lerp(tickDelta, this.prevPosY, this.y) - cameraPos.getY());
+        float dZ = (float)(MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - cameraPos.getZ());
 
         // I stack-traced buildGeometry, this block replicates the MatrixStack and then moves the text to the right place.
         MatrixStack matrices = new MatrixStack();
@@ -119,7 +118,7 @@ public class TextParticle extends SpriteBillboardParticle {
         matrices.multiply(quaternionf);
 
         float scaleSize = this.getSize(tickDelta) / 6f;
-        matrices.scale(-scaleSize, -scaleSize, -scaleSize);
+        matrices.scale(scaleSize, -scaleSize, scaleSize);
 
         MinecraftClient.getInstance().textRenderer.draw(this.text, 0f, 0f, this.textColour, Options.particleTextShadow, matrices.peek().getPositionMatrix(), MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers(), TextRenderer.TextLayerType.POLYGON_OFFSET, 0, this.getBrightness(tickDelta));
     }

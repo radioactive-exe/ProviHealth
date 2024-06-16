@@ -1,5 +1,6 @@
 package com.provismet.provihealth.hud;
 
+import net.minecraft.client.render.RenderTickCounter;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -64,7 +65,8 @@ public class TargetHealthBar implements HudRenderCallback {
 
     @SuppressWarnings("resource")
     @Override
-    public void onHudRender (DrawContext drawContext, float tickDelta) {
+    public void onHudRender (DrawContext drawContext, RenderTickCounter tickCounter) {
+        float tickDelta = tickCounter.getTickDelta(true);
         if (this.healthBarDuration > 0f) this.healthBarDuration -= tickDelta;
         else this.reset();
 

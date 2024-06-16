@@ -24,7 +24,7 @@ public class ProviHealthConfigScreen {
         ConfigBuilder builder = ConfigBuilder.create();
         builder.setParentScreen(parent);
         builder.setTitle(Text.translatable("title.provihealth.config"));
-        builder.setDefaultBackgroundTexture(new Identifier("textures/block/deepslate_tiles.png"));
+        builder.setDefaultBackgroundTexture(Identifier.of("textures/block/deepslate_tiles.png"));
 
         ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
@@ -334,14 +334,14 @@ public class ProviHealthConfigScreen {
             .build()
         );
 
-        particles.addEntry(entryBuilder.startColorField(Text.translatable("entry.provihealth.damageParticleTextColour"), Options.damageParticleTextColour)
-            .setDefaultValue(0xFFFFFF)
+        particles.addEntry(entryBuilder.startAlphaColorField(Text.translatable("entry.provihealth.damageParticleTextColour"), Options.damageParticleTextColour)
+            .setDefaultValue(0xFFFFFFFF)
             .setSaveConsumer(newValue -> Options.damageParticleTextColour = newValue)
             .build()
         );
 
-        particles.addEntry(entryBuilder.startColorField(Text.translatable("entry.provihealth.healingParticleTextColour"), Options.healingParticleTextColour)
-            .setDefaultValue(0xFFFFFF)
+        particles.addEntry(entryBuilder.startAlphaColorField(Text.translatable("entry.provihealth.healingParticleTextColour"), Options.healingParticleTextColour)
+            .setDefaultValue(0xFFFFFFFF)
             .setSaveConsumer(newValue -> Options.healingParticleTextColour = newValue)
             .build()
         );
