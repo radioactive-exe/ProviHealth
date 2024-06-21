@@ -1,6 +1,6 @@
 name: Suggestion
 description: Have an idea for a new feature or general improvement? Explain it here.
-labels: ["suggestion"]
+labels: ["enhancement"]
 projects: "Provismet/3"
 body:
 - type: dropdown
@@ -25,5 +25,5 @@ body:
   id: reason
   attributes:
     label: Reason
-    placeholder: [Optional] Describe why you want this feature. (How would it affect your gameplay? Do you have a specific use-case in mind? Are you a modder trying to link with this mod? etc)
+    placeholder: Describe why you want this feature. (How would it affect your gameplay? Do you have a specific use-case in mind? Are you a modder trying to link with this mod? etc)
 
