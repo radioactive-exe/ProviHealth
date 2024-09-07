@@ -46,6 +46,7 @@ public class EntityHealthBar {
         LivingEntity target;
         if (entity instanceof LivingEntity living) target = living;
         else return;
+        if (!MinecraftClient.isHudEnabled()) return;
         if (!enabled || (target.hasPassengers() && target.getFirstPassenger() instanceof LivingEntity livingRider && !Options.blacklist.contains(EntityType.getId(livingRider.getType()).toString())) || target == MinecraftClient.getInstance().player || !Visibility.isVisible(living)) return;
         if (!Options.shouldRenderHealthFor(living)) return;
 
