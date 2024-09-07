@@ -1,5 +1,6 @@
 package com.provismet.provihealth.config;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalEntityTypeTags;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -95,7 +96,7 @@ public class Options {
 
     public static boolean shouldRenderHealthFor (LivingEntity livingEntity) {
         if (blacklist.contains(EntityType.getId(livingEntity.getType()).toString())) return false;
-        if (livingEntity.distanceTo(MinecraftClient.getInstance().player) > Options.maxRenderDistance) return false;
+        if (livingEntity.distanceTo(MinecraftClient.getInstance().player) > Math.min(Options.maxRenderDistance, RenderSystem.getShaderFogEnd())) return false;
 
         Entity target = MinecraftClient.getInstance().targetedEntity;
         if (livingEntity.getType().isIn(ConventionalEntityTypeTags.BOSSES)) {
