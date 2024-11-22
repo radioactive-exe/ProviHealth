@@ -9,9 +9,7 @@ public class ModMenuHook implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory () {
         if (FabricLoader.getInstance().isModLoaded("cloth-config")) {
-            return parent -> {
-                return ProviHealthConfigScreen.build(parent);
-            };
+            return ProviHealthConfigScreen::build;
         }
         else return parent -> null;
     }

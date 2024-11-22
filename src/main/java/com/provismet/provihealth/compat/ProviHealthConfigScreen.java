@@ -18,6 +18,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class ProviHealthConfigScreen {
     public static Screen build (Screen parent) {
@@ -133,7 +134,7 @@ public class ProviHealthConfigScreen {
         );
 
         hud.addEntry(entryBuilder.startStrList(Text.translatable("entry.provihealth.blacklist"), Options.blacklistHUD)
-            .setDefaultValue(Arrays.asList("minecraft:armor_stand"))
+            .setDefaultValue(List.of("minecraft:armor_stand"))
             .setSaveConsumer(newValue -> Options.blacklistHUD = newValue)
             .build()
         );
@@ -277,7 +278,7 @@ public class ProviHealthConfigScreen {
         );
 
         health.addEntry(entryBuilder.startStrList(Text.translatable("entry.provihealth.blacklist"), Options.blacklist)
-            .setDefaultValue(Arrays.asList("minecraft:armor_stand"))
+            .setDefaultValue(List.of("minecraft:armor_stand"))
             .setSaveConsumer(newValue -> Options.blacklist = newValue)
             .build()
         );

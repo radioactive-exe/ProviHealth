@@ -33,7 +33,7 @@ public class ProviHealthClient implements ClientModInitializer {
                     entrypoint.getEntrypoint().onInitialize();
                 }
                 catch (Exception e) {
-                    LOGGER.error("Mod " + otherModId + " caused an error during inter-mod initialisation: ", e);
+                    LOGGER.error("Mod {} caused an error during inter-mod initialisation: ", otherModId, e);
                 }
             }
         );
