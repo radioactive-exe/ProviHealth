@@ -1,8 +1,9 @@
 package com.provismet.provihealth.hud;
 
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
-import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
+import net.minecraft.util.Colors;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -18,8 +19,6 @@ import com.provismet.provihealth.world.EntityHealthBar;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.DiffuseLighting;
-import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
@@ -63,7 +62,6 @@ public class TargetHealthBar implements HudRenderCallback {
     private int currentHealthWidth;
     private int currentVehicleHealthWidth;
 
-    @SuppressWarnings("resource")
     @Override
     public void onHudRender (DrawContext drawContext, RenderTickCounter tickCounter) {
         float tickDelta = tickCounter.getTickDelta(true);
@@ -137,13 +135,13 @@ public class TargetHealthBar implements HudRenderCallback {
 
                 // Render health value and heart icons
                 int healthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, String.format("%d/%d", Math.round(this.target.getHealth()), Math.round(this.target.getMaxHealth())), infoLeftX, BAR_Y + BAR_HEIGHT + (vehicleMaxHealthDeep > 0f ? MOUNT_BAR_HEIGHT : 0) + 2, 0xFFFFFF, true); // Health Value
-                drawContext.drawTexture(HEART, healthX, BAR_Y + BAR_HEIGHT + (vehicleMaxHealthDeep > 0f ? MOUNT_BAR_HEIGHT : 0) + 1, 9, 9, 0f, 0f, 9, 9, 9, 9);
+                drawContext.drawTexture(RenderLayer::getGuiTextured, HEART, healthX, BAR_Y + BAR_HEIGHT + (vehicleMaxHealthDeep > 0f ? MOUNT_BAR_HEIGHT : 0) + 1, 0f, 0f, 9, 9, 9, 9, 9, 9);
 
                 // Render armour icon if necessary
                 int armourX = MinecraftClient.getInstance().textRenderer.getWidth(String.format("%d/%d", Math.round(this.target.getMaxHealth()), Math.round(this.target.getMaxHealth()))) + infoLeftX + 18;
                 if (this.target.getArmor() > 0) {
                     armourX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, String.format("%d", this.target.getArmor()), armourX, BAR_Y + BAR_HEIGHT + (vehicleMaxHealthDeep > 0f ? MOUNT_BAR_HEIGHT : 0) + 2, 0xFFFFFF, true);
-                    drawContext.drawTexture(ARMOUR, armourX, BAR_Y + BAR_HEIGHT + (vehicleMaxHealthDeep > 0f ? MOUNT_BAR_HEIGHT : 0) + 1, 9, 9, 0f, 0f, 9, 9, 9, 9);
+                    drawContext.drawTexture(RenderLayer::getGuiTextured, ARMOUR, armourX, BAR_Y + BAR_HEIGHT + (vehicleMaxHealthDeep > 0f ? MOUNT_BAR_HEIGHT : 0) + 1, 0f, 0f, 9, 9, 9, 9, 9, 9);
                 }
 
                 if (vehicleMaxHealthDeep > 0f) {
@@ -154,7 +152,7 @@ public class TargetHealthBar implements HudRenderCallback {
                     if (expectedLeftPixel < armourX) expectedLeftPixel = armourX + 10;
 
                     int mountHealthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, mountHealthString, expectedLeftPixel, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT + 2, 0xFFFFFF, true);
-                    drawContext.drawTexture(MOUNT_HEART, mountHealthX, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT + 1, 9, 9, 0f, 0f, 9, 9, 9, 9);
+                    drawContext.drawTexture(RenderLayer::getGuiTextured, MOUNT_HEART, mountHealthX, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT + 1, 0f, 0f, 9, 9, 9, 9, 9, 9);
                 }
 
                 // Render titles on HUD
@@ -184,15 +182,15 @@ public class TargetHealthBar implements HudRenderCallback {
                 // Render Portrait
                 RenderSystem.enableBlend();
                 if (Options.hudPosition == HUDPosition.LEFT) {
-                    drawContext.drawTexture(BorderRegistry.getBorder(this.target), 0, OFFSET_Y, FRAME_LENGTH, FRAME_LENGTH, 48f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Background
-                    drawContext.drawTexture(BorderRegistry.getBorder(this.target), 0, OFFSET_Y, 300, 0f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Foreground
+                    drawContext.drawTexture(RenderLayer::getGuiTextured, BorderRegistry.getBorder(this.target), 0, OFFSET_Y, 48f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Background
+                    drawContext.drawTexture(RenderLayer::getGuiTextured, BorderRegistry.getBorder(this.target), 0, OFFSET_Y, 0f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Foreground
                     RenderSystem.disableBlend();
 
                     drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), LEFT_TEXT_X, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
                 }
                 else {
-                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, 0, 0.5f, 1f, 0f, 1f); // Background
-                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, 300, 0f, 0.5f, 0f, 1f); // Foreground
+                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, 0.5f, 1f, 0f, 1f); // Background
+                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, 0f, 0.5f, 0f, 1f); // Foreground
                     RenderSystem.disableBlend();
 
                     drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), OFFSET_X - 1 - nameWidth, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
@@ -220,7 +218,10 @@ public class TargetHealthBar implements HudRenderCallback {
                     drawContext.enableScissor(OFFSET_X, OFFSET_Y, OFFSET_X + FRAME_LENGTH, OFFSET_Y + FRAME_LENGTH);
                     EntityHealthBar.enabled = false;
                     disabledLabels = true;
-                    this.drawEntity(drawContext, 24 + OFFSET_X, OFFSET_Y, 30,
+                    InventoryScreen.drawEntity(
+                        drawContext,
+                        24 + OFFSET_X, OFFSET_Y,
+                        30f,
                         new Vector3f(0f, renderHeight, 0f),
                         (new Quaternionf()).rotateZ(3.1415927f),
                         null,
@@ -248,7 +249,11 @@ public class TargetHealthBar implements HudRenderCallback {
                     drawContext.enableScissor(OFFSET_X, OFFSET_Y, OFFSET_X + FRAME_LENGTH, OFFSET_Y + FRAME_LENGTH);
                     EntityHealthBar.enabled = false;
                     disabledLabels = true;
-                    this.drawEntity(drawContext, 24 + OFFSET_X, OFFSET_Y, 30,
+                    InventoryScreen.drawEntity(
+                        drawContext,
+                        24 + OFFSET_X,
+                        OFFSET_Y,
+                        30,
                         new Vector3f(0f, renderHeight, 0f),
                         (new Quaternionf()).rotateZ(3.1415927f).rotateY(yawOffset),
                         null,
@@ -262,7 +267,6 @@ public class TargetHealthBar implements HudRenderCallback {
         }
     }
 
-    @SuppressWarnings("resource")
     private Text getName (LivingEntity entity) {
         if (entity instanceof PlayerEntity && entity.isInvisibleTo(MinecraftClient.getInstance().player)) return Text.translatable("entity.provihealth.unknownPlayer");
         else return entity.getDisplayName();
@@ -279,13 +283,13 @@ public class TargetHealthBar implements HudRenderCallback {
     }
 
     private void renderBar (DrawContext drawContext, int width, int barIndex) {
-        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
-        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (BAR_WIDTH - width), BAR_X + BAR_WIDTH, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
+        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
+        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (BAR_WIDTH - width), BAR_X + BAR_WIDTH, BAR_Y, BAR_Y + BAR_HEIGHT, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
     }
 
     private void renderMountBar (DrawContext drawContext, int width, int barIndex) {
-        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
-        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (MOUNT_BAR_WIDTH - width) + BAR_WIDTH_DIFF, BAR_X + BAR_WIDTH_DIFF + MOUNT_BAR_WIDTH, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
+        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
+        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (MOUNT_BAR_WIDTH - width) + BAR_WIDTH_DIFF, BAR_X + BAR_WIDTH_DIFF + MOUNT_BAR_WIDTH, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
     }
 
     private void reset () {
@@ -310,40 +314,23 @@ public class TargetHealthBar implements HudRenderCallback {
         }
     }
 
-    // Copied from InventoryScreen because this method does not exist in 1.20.1
-    @SuppressWarnings("deprecation")
-    private void drawEntity (DrawContext context, float x, float y, int size, Vector3f vector3f, Quaternionf quaternionf, @Nullable Quaternionf quaternionf2, LivingEntity entity) {
-        context.getMatrices().push();
-        context.getMatrices().translate((double)x, (double)y, 50.0);
-        context.getMatrices().multiplyPositionMatrix((new Matrix4f()).scaling((float)size, (float)size, (float)(-size)));
-        context.getMatrices().translate(vector3f.x, vector3f.y, vector3f.z);
-        context.getMatrices().multiply(quaternionf);
-        DiffuseLighting.method_34742();
-        EntityRenderDispatcher entityRenderDispatcher = MinecraftClient.getInstance().getEntityRenderDispatcher();
-        if (quaternionf2 != null) {
-            quaternionf2.conjugate();
-            entityRenderDispatcher.setRotation(quaternionf2);
-        }
-
-        entityRenderDispatcher.setRenderShadows(false);
-        RenderSystem.runAsFancy(() -> {
-            entityRenderDispatcher.render(entity, 0.0, 0.0, 0.0, 0.0F, 1.0F, context.getMatrices(), context.getVertexConsumers(), 15728880);
-        });
-        context.draw();
-        entityRenderDispatcher.setRenderShadows(true);
-        context.getMatrices().pop();
-        DiffuseLighting.enableGuiDepthLighting();
+    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, float u1, float u2, float v1, float v2) {
+        context.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u2, u1, v1, v2, Colors.WHITE);
     }
 
-    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
-        context.drawTexturedQuad(texture, x1, x2, y1, y2, z, u2, u1, v1, v2);
+    private void drawTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, float u1, float u2, float v1, float v2, Vector3f colour) {
+        int intColour = 0xFF000000;
+        intColour += (int)(colour.x * 255) << 4;
+        intColour += (int)(colour.y * 255) << 2;
+        intColour += (int)(colour.z * 255f);
+        context.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u1, u2, v1, v2, intColour);
     }
 
-    private void drawTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2, Vector3f colour) {
-        context.drawTexturedQuad(texture, x1, x2, y1, y2, z, u1, u2, v1, v2, colour.x, colour.y, colour.z, 1f);
-    }
-
-    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2, Vector3f colour) {
-        context.drawTexturedQuad(texture, x1, x2, y1, y2, z, u2, u1, v1, v2, colour.x, colour.y, colour.z, 1f);
+    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, float u1, float u2, float v1, float v2, Vector3f colour) {
+        int intColour = 0xFF000000;
+        intColour += (int)(colour.x * 255f) << 4;
+        intColour += (int)(colour.y * 255f) << 2;
+        intColour += (int)(colour.z * 255f);
+        context.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u2, u1, v1, v2, intColour);
     }
 }

@@ -1,6 +1,11 @@
 package com.provismet.provihealth.world;
 
+import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
+import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -9,15 +14,11 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.SeeThroughText;
-import com.provismet.provihealth.hud.BorderRegistry;
-import com.provismet.provihealth.interfaces.IMixinLivingEntity;
-import com.provismet.provihealth.util.Visibility;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumer;
@@ -25,10 +26,6 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
@@ -42,20 +39,16 @@ public class EntityHealthBar {
 
     public static boolean enabled = true;
 
-    public static void render (Entity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, Quaternionf rotation, TextRenderer textRenderer) {
-        LivingEntity target;
-        if (entity instanceof LivingEntity living) target = living;
-        else return;
-        if (!MinecraftClient.isHudEnabled()) return;
-        if (!enabled || (target.hasPassengers() && target.getFirstPassenger() instanceof LivingEntity livingRider && !Options.blacklist.contains(EntityType.getId(livingRider.getType()).toString())) || target == MinecraftClient.getInstance().player || !Visibility.isVisible(living)) return;
-        if (!Options.shouldRenderHealthFor(living)) return;
+    public static void render (EntityRenderState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers, Quaternionf rotation, TextRenderer textRenderer) {
+        IMixinEntityRenderState mixinState = (IMixinEntityRenderState)state;
+        if (!enabled || !mixinState.provi_Health$isLiving() || !mixinState.provi_Health$shouldRenderHealth() || !MinecraftClient.isHudEnabled()) return;
 
         int light = LightmapTextureManager.pack(15, 15);
 
         matrices.push();
-        matrices.translate(0f, target.getHeight() + 0.45f - (0.003f / Options.worldHealthBarScale) + Options.worldOffsetY, 0f);
+        matrices.translate(0f, state.height + 0.45f - (0.003f / Options.worldHealthBarScale) + Options.worldOffsetY, 0f);
         matrices.scale(Options.worldHealthBarScale, Options.worldHealthBarScale, Options.worldHealthBarScale);
-        matrices.translate(0f, ((target.shouldRenderName() || target.hasCustomName() && target == MinecraftClient.getInstance().getEntityRenderDispatcher().targetedEntity) && !Options.overrideLabels && !target.isInvisibleTo(MinecraftClient.getInstance().player) ? 0.02f + 0.3f / Options.worldHealthBarScale : 0f), 0f);
+        matrices.translate(0f, (mixinState.provi_Health$shouldRenderLabel() && !Options.overrideLabels && !(state.invisible || (state instanceof LivingEntityRenderState livingState && livingState.invisibleToPlayer)) ? 0.02f + 0.3f / Options.worldHealthBarScale : 0f), 0f);
         matrices.multiply(rotation); // This is the problem.
 
         Tessellator tessellator = Tessellator.getInstance();
@@ -63,12 +56,12 @@ public class EntityHealthBar {
 
         if (Options.compatInWorld) {
             vertexConsumer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
-            RenderSystem.setShader(GameRenderer::getPositionTexProgram);
+            RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX);
             RenderSystem.setShaderTexture(0, COMPAT_BARS);
         }
         else {
             vertexConsumer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-            RenderSystem.setShader(GameRenderer::getPositionTexColorProgram);
+            RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
             RenderSystem.setShaderTexture(0, BARS);
         }
         RenderSystem.enableDepthTest();
@@ -76,30 +69,15 @@ public class EntityHealthBar {
 
         Matrix4f model = matrices.peek().getPositionMatrix();
         renderBar(model, vertexConsumer, 1, 1f, false); // Empty
-        renderBar(model, vertexConsumer, 0, ((IMixinLivingEntity)target).provihealth_glideHealth(tickDelta * Options.worldGlide), false); // Health
+        renderBar(model, vertexConsumer, 0, mixinState.provi_Health$getHealth().getMax() / mixinState.provi_Health$getHealth().getLerped(), false); // Health
 
-        if (target.hasVehicle()) {
-            float vehicleHealthDeep = 0f;
-            float vehicleMaxHealthDeep = 0f;
-
-            Entity currentEntity = target.getVehicle();
-            while (currentEntity != null) {
-                if (currentEntity instanceof LivingEntity currentLiving) {
-                    vehicleHealthDeep += currentLiving.getHealth();
-                    vehicleMaxHealthDeep += currentLiving.getMaxHealth();
-                }
-                currentEntity = currentEntity.getVehicle();
-            }
-            float vehicleHealthPercent = vehicleMaxHealthDeep > 0f ? MathHelper.clamp(vehicleHealthDeep / vehicleMaxHealthDeep, 0f, 1f) : 0f;
-
-            if (vehicleHealthPercent > 0f) {
-                matrices.push();
-                matrices.translate(0f, -1f * (7f / TEXTURE_SIZE), 0f);
-                Matrix4f mountModel = matrices.peek().getPositionMatrix();
-                renderBar(mountModel, vertexConsumer, 1, 1f, true);
-                renderBar(mountModel, vertexConsumer, 0, ((IMixinLivingEntity)target).provihealth_glideVehicle(vehicleHealthPercent, tickDelta * Options.worldGlide), true);
-                matrices.pop();
-            }
+        if (mixinState.provi_Health$getMountHealth().getMax() > 0) {
+            matrices.push();
+            matrices.translate(0f, -1f * (7f / TEXTURE_SIZE), 0f);
+            Matrix4f mountModel = matrices.peek().getPositionMatrix();
+            renderBar(mountModel, vertexConsumer, 1, 1f, true); // Empty
+            renderBar(mountModel, vertexConsumer, 0, mixinState.provi_Health$getMountHealth().getMax() / mixinState.provi_Health$getMountHealth().getLerped(), true); // Health
+            matrices.pop();
         }
 
         BufferRenderer.drawWithGlobalProgram(vertexConsumer.end());
@@ -109,14 +87,14 @@ public class EntityHealthBar {
             matrices.push();
             matrices.scale(0.01f, -0.01f, 0.01f);
             Matrix4f textModel = matrices.peek().getPositionMatrix();
-            final String healthString = String.format("%d/%d", Math.round(target.getHealth()), Math.round(target.getMaxHealth()));
+            final String healthString = String.format("%d/%d", Math.round(mixinState.provi_Health$getHealth().getCurrent()), Math.round(mixinState.provi_Health$getHealth().getMax()));
             final float lineHeight = 9;
 
             List<Text> titles = List.of(); // initialise an empty list
-            if (Options.worldTitles) titles = BorderRegistry.getTitle(target, true, false);
+            if (Options.worldTitles) titles = mixinState.provi_Health$getTitles();
 
             if (Options.overrideLabels) {
-                final Text targetName = getName(target);
+                final Text targetName = EntityHealthBar.getName(state);
                 final float targetNameWidth = textRenderer.getWidth(targetName);
 
                 // 0 is in the centre.
@@ -135,7 +113,7 @@ public class EntityHealthBar {
                     nameY -= lineHeight;
                 }
 
-                if ((target.shouldRenderName() || (target.hasCustomName() && target == MinecraftClient.getInstance().targetedEntity)) && !target.isSneaky() && Options.seeThroughTextType != SeeThroughText.NONE) {
+                if (mixinState.provi_Health$shouldRenderHealth() && !state.sneaking && Options.seeThroughTextType != SeeThroughText.NONE) {
                     if (Options.seeThroughTextType == SeeThroughText.STANDARD) {
                         if (Options.worldShadows) {
                             EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX + 1, nameY + 1, healthX + 1, healthY + 1, lineHeight, 1, 0xFF404040, false, textModel, vertexConsumers, TextLayerType.NORMAL, light);
@@ -185,9 +163,9 @@ public class EntityHealthBar {
         }
     }
 
-    private static Text getName (LivingEntity entity) {
-        if (entity instanceof PlayerEntity && entity.isInvisibleTo(MinecraftClient.getInstance().player)) return Text.translatable("entity.provihealth.unknownPlayer");
-        else return entity.getDisplayName();
+    private static Text getName (EntityRenderState state) {
+        if (state instanceof PlayerEntityRenderState playerState && playerState.invisibleToPlayer) return Text.translatable("entity.provihealth.unknownPlayer");
+        return state.displayName;
     }
 
     private static void renderBar (Matrix4f model, VertexConsumer vertexConsumer, int index, float percentage, boolean isMount) {

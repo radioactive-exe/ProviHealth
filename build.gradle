@@ -34,8 +34,8 @@ dependencies {
 	modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
 	modApi "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_version}"
 
-	modImplementation "com.github.provismet:lilylib:${project.lilylib_version}"
-    include "com.github.provismet:lilylib:${project.lilylib_version}"
+	modImplementation "com.github.Provismet:lilylib:${project.lilylib_version}"
+    include "com.github.Provismet:lilylib:${project.lilylib_version}"
 }
 
 processResources {
@@ -115,6 +115,8 @@ publishMods {
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
+			version = project.mod_version + "-mc" + project.minecraft_version
+			artifactId = project.archives_base_name
 			from components.java
 		}
 	}

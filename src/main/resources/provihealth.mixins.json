@@ -1,14 +1,15 @@
 {
-	"required": true,
-	"package": "com.provismet.provihealth.mixin",
-	"compatibilityLevel": "JAVA_21",
-	"mixins": [
-	],
-	"client": [
-		"LivingEntityMixin",
-		"EntityRendererMixin"
-	],
-	"injectors": {
-		"defaultRequire": 1
+  "required": true,
+  "package": "com.provismet.provihealth.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+  ],
+  "client": [
+    "EntityRendererMixin",
+    "EntityRenderStateMixin",
+    "LivingEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
 	}
 }

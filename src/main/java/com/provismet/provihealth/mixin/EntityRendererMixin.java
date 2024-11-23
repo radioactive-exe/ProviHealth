@@ -1,7 +1,14 @@
 package com.provismet.provihealth.mixin;
 
+import com.provismet.provihealth.hud.BorderRegistry;
+import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
+import com.provismet.provihealth.util.Visibility;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
+import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.entity.EntityType;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,17 +29,86 @@ import net.minecraft.text.Text;
 
 @Mixin(EntityRenderer.class)
 public abstract class EntityRendererMixin {
-    @Shadow @Final private TextRenderer textRenderer;
+    @Shadow @Final
+    private TextRenderer textRenderer;
 
-    @Shadow @Final protected EntityRenderDispatcher dispatcher;
+    @Shadow @Final
+    protected EntityRenderDispatcher dispatcher;
+
+    @Shadow
+    protected abstract boolean hasLabel (Entity entity, double squaredDistanceToCamera);
+
+    @Shadow
+    protected abstract @Nullable Text getDisplayName (Entity entity);
 
     @Inject(method="renderLabelIfPresent", at=@At("HEAD"), cancellable=true)
-    private void cancelLabel (Entity entity, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, float tickDelta, CallbackInfo info) {
-        if (TargetHealthBar.disabledLabels || (Options.overrideLabels && entity instanceof LivingEntity living && Options.shouldRenderHealthFor(living))) info.cancel();
+    private void cancelLabel (EntityRenderState state, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo info) {
+        if (TargetHealthBar.disabledLabels || (Options.overrideLabels &&  ((IMixinEntityRenderState)state).provi_Health$shouldRenderHealth())) info.cancel();
     }
 
     @Inject(method="render", at=@At("HEAD"))
-    private void addHealthBar (Entity entity, float yaw, float tickDelta, MatrixStack matrixStack, VertexConsumerProvider vertexConsumerProvider, int light, CallbackInfo info) {
-        EntityHealthBar.render(entity, tickDelta, matrixStack, vertexConsumerProvider, this.dispatcher.getRotation(), this.textRenderer);
+    private void addHealthBar (EntityRenderState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo info) {
+        EntityHealthBar.render(state, matrices, vertexConsumers, this.dispatcher.getRotation(), this.textRenderer);
+    }
+
+    @Inject(method="updateRenderState", at=@At("HEAD"))
+    private void modifyRenderState (Entity entity, EntityRenderState state, float tickDelta, CallbackInfo info) {
+        if (entity instanceof LivingEntity living) { // Mixin here instead of LivingEntityRenderer because some mods have mobs that bypass it.
+            IMixinEntityRenderState mixinState = (IMixinEntityRenderState)state;
+            if (mixinState.provi_Health$getHealth() == null) mixinState.provi_Health$setHealth(living.getHealth());
+            mixinState.provi_Health$getHealth().lerp(tickDelta);
+            mixinState.provi_Health$setShouldRenderHealth(Options.shouldRenderHealthFor(living));
+            mixinState.provi_Health$setIsLiving(true);
+            mixinState.provi_Health$setShouldRenderLabel(this.hasLabel(entity, state.squaredDistanceToCamera));
+
+            // Once per tick updates
+            if (living.age != state.age) {
+                mixinState.provi_Health$setTitles(BorderRegistry.getTitle(living, true, false));
+                mixinState.provi_Health$setHealth(living.getHealth());
+                mixinState.provi_Health$getHealth().setMaxHealth(living.getMaxHealth());
+
+                // If another valid entity is riding this one, don't render a healthbar.
+                if ((living.hasPassengers() &&
+                    living.getFirstPassenger() instanceof LivingEntity livingRider &&
+                    !Options.blacklist.contains(EntityType.getId(livingRider.getType()).toString())) ||
+                    living == MinecraftClient.getInstance().player ||
+                    !Visibility.isVisible(living)
+                ) {
+                    mixinState.provi_Health$setShouldRenderHealth(false);
+                }
+
+                // Handling for mob stacks.
+                if (entity.hasVehicle()) {
+                    float vehicleHealthDeep = 0f;
+                    float vehicleMaxHealthDeep = 0f;
+
+                    Entity currentEntity = entity.getVehicle();
+                    while (currentEntity != null) {
+                        if (currentEntity instanceof LivingEntity currentLiving) {
+                            vehicleHealthDeep += currentLiving.getHealth();
+                            vehicleMaxHealthDeep += currentLiving.getMaxHealth();
+                        }
+                        currentEntity = currentEntity.getVehicle();
+                    }
+
+                    mixinState.provi_Health$setMountHealth(vehicleHealthDeep);
+                    mixinState.provi_Health$getMountHealth().lerp(tickDelta);
+                    mixinState.provi_Health$getMountHealth().setMaxHealth(vehicleMaxHealthDeep);
+                }
+                else {
+                    mixinState.provi_Health$setMountHealth(0f);
+                }
+            }
+        }
+    }
+
+    // For some reason the display name is cleared from the state if the label isn't rendering. Put it back.
+    @Inject(method="updateRenderState", at=@At("TAIL"))
+    private void postModifyRenderState (Entity entity, EntityRenderState state, float tickDelta, CallbackInfo info) {
+        if (state.displayName == null) {
+            Text name = this.getDisplayName(entity);
+            if (name != null) state.displayName = name.copy();
+            else state.displayName = entity.getName().copy();
+        }
     }
 }

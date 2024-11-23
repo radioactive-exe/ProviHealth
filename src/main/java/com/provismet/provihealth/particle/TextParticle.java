@@ -28,22 +28,21 @@ public class TextParticle extends SpriteBillboardParticle {
 
     private float prevScale;
 
-    @SuppressWarnings("resource")
     protected TextParticle (ClientWorld clientWorld, double x, double y, double z, TextParticleEffect particleEffect) {
         super(clientWorld, x, y, z);
 
-        this.red = particleEffect.getColour().x();
-        this.green = particleEffect.getColour().y();
-        this.blue = particleEffect.getColour().z();
+        this.red = particleEffect.colour().x();
+        this.green = particleEffect.colour().y();
+        this.blue = particleEffect.colour().z();
         this.scale = 0f;
         this.prevScale = 0f;
-        this.alpha = particleEffect.alpha;
-        this.textColour = particleEffect.textColour;
-        this.text = particleEffect.text;
+        this.alpha = particleEffect.alpha();
+        this.textColour = particleEffect.textColour();
+        this.text = particleEffect.text();
         this.maxAge = 40;
 
         this.rotationSpeed = (float)Math.toRadians((this.random.nextDouble() * 1.5 + 0.5) * (this.random.nextBoolean() ? 10 : -10));
-        this.maxScale = particleEffect.scale;
+        this.maxScale = particleEffect.scale();
 
         final double sign = this.random.nextBoolean() ? 1 : -1;
         final RightAngledTriangle triangle = new RightAngledTriangle(new Vec3d(this.x, this.y, this.z), MinecraftClient.getInstance().player.getEyePos());
