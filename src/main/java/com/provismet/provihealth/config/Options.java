@@ -48,7 +48,6 @@ public class Options {
     public static HUDType otherHUD = HUDType.FULL;
 
     public static float hudGlide = 0.5f;
-    public static float worldGlide = 0.5f;
 
     public static boolean showHudIcon = true;
     public static boolean useCustomHudPortraits = true;
@@ -149,7 +148,6 @@ public class Options {
             .append("hudStartColour", hudStartColour).newLine()
             .append("hudEndColour", hudEndColour).newLine()
             .append("replaceLabels", overrideLabels).newLine()
-            .append("worldGlide", worldGlide).newLine()
             .append("worldHealthText", showTextInWorld).newLine()
             .append("worldTextShadows", worldShadows).newLine()
             .append("maxRenderDistance", maxRenderDistance).newLine()
@@ -250,10 +248,6 @@ public class Options {
 
                     case "replaceLabels":
                         overrideLabels = parser.nextBoolean();
-                        break;
-                    
-                    case "worldGlide":
-                        worldGlide = (float)parser.nextDouble();
                         break;
 
                     case "worldHealthText":

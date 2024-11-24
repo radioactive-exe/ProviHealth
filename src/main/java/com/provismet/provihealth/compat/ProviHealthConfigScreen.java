@@ -146,15 +146,6 @@ public class ProviHealthConfigScreen {
             .build()
         );
 
-        health.addEntry(entryBuilder.startFloatField(Text.translatable("entry.provihealth.hudGlide"), Options.worldGlide)
-            .setDefaultValue(0.5f)
-            .setMin(0.01f)
-            .setMax(1f)
-            .setTooltip(Text.translatable("tooltip.provihealth.glide"))
-            .setSaveConsumer(newValue -> Options.worldGlide = newValue)
-            .build()
-        );
-
         health.addEntry(entryBuilder.startBooleanToggle(Text.translatable("entry.provihealth.worldText"), Options.showTextInWorld)
             .setDefaultValue(true)
             .setSaveConsumer(newValue -> Options.showTextInWorld = newValue)
