@@ -1,6 +1,7 @@
-Patch update to address some visual inconsistencies.
+No major changes, updates the mod and changes several internals to use the changes in Minecraft's rendering code.
 
 ## Changes
-- In-World health bars no longer show when GUI is hidden (F1 mode).
-- In-World health bars no longer render past the fog border.
-  - The effects of blindness and darkness are considered fog. 
+- In-world health bars now use tickDelta (bar movement is fixed to ticks).
+
+## Removals
+- Removed the World Gliding setting due to the above.
