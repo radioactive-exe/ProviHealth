@@ -242,12 +242,10 @@ public class Options {
                     
                     case "hudStartColour":
                         hudStartColour = parser.nextInt();
-                        unpackedStartHud = Vec3d.unpackRgb(hudStartColour).toVector3f();
                         break;
 
                     case "hudEndColour":
                         hudEndColour = parser.nextInt();
-                        unpackedEndHud = Vec3d.unpackRgb(hudEndColour).toVector3f();
                         break;
 
                     case "replaceLabels":
@@ -451,7 +449,7 @@ public class Options {
         switch (type) {
             case ALWAYS_HIDE:
                 return false;
-        
+
             case HIDE_IF_FULL:
                 if (livingEntity.getHealth() < livingEntity.getMaxHealth()) return true;
                 else if (livingEntity.hasVehicle()) {
@@ -464,7 +462,7 @@ public class Options {
                     }
                 }
                 return false;
-            
+
             case ALWAYS_SHOW:
             default:
                 return true;

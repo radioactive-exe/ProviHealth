@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.List;
 
 @Mixin(EntityRenderState.class)
-public class EntityRenderStateMixin implements IMixinEntityRenderState {
+public abstract class EntityRenderStateMixin implements IMixinEntityRenderState {
     @Unique
     private boolean shouldRenderHealth;
 
@@ -35,15 +35,13 @@ public class EntityRenderStateMixin implements IMixinEntityRenderState {
     }
 
     @Override
-    public void provi_Health$setHealth (float value) {
-        if (this.healthContainer == null) this.healthContainer = new HealthContainer(value);
-        else this.healthContainer.set(value);
+    public void provi_Health$setHealth (HealthContainer container) {
+        this.healthContainer = container;
     }
 
     @Override
-    public void provi_Health$setMountHealth (float value) {
-        if (this.mountHealthContainer == null) this.mountHealthContainer = new HealthContainer(value);
-        else this.mountHealthContainer.set(value);
+    public void provi_Health$setMountHealth (HealthContainer container) {
+        this.mountHealthContainer = container;
     }
 
     @Override

@@ -8,11 +8,6 @@ public final class HealthContainer {
     private float previousHealth;
     private float lerpedHealth;
 
-    public HealthContainer (float health, float previousHealth) {
-        this.currentHealth = health;
-        this.previousHealth = health;
-    }
-
     public HealthContainer (float health) {
         this.currentHealth = health;
         this.previousHealth = health;
@@ -27,9 +22,8 @@ public final class HealthContainer {
         this.currentHealth = health;
     }
 
-    public float lerp (float progress) {
+    public void lerp (float progress) {
         this.lerpedHealth = MathHelper.lerp(progress, this.previousHealth, this.currentHealth);
-        return this.lerpedHealth;
     }
 
     public float getMax () {

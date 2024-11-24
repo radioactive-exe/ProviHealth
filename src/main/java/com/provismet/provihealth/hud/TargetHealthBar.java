@@ -3,7 +3,9 @@ package com.provismet.provihealth.hud;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.util.Colors;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -28,6 +30,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class TargetHealthBar implements HudRenderCallback {
     public static boolean disabledLabels = false;
@@ -48,6 +51,8 @@ public class TargetHealthBar implements HudRenderCallback {
     private static final int LEFT_TEXT_X = FRAME_LENGTH + 2;
     private static int BAR_X = FRAME_LENGTH - 5;
     private static int BAR_Y = OFFSET_Y + FRAME_LENGTH / 2 - (BAR_HEIGHT + MOUNT_BAR_HEIGHT) / 2;
+    private static final int FOREGROUND_Z = 300;
+    private static final int BACKGROUND_Z = 0;
 
     private static final float BAR_V2 = ((float)BAR_HEIGHT / (float)(BAR_HEIGHT + MOUNT_BAR_HEIGHT)) / 2f; // Accounting for index.
     private static final float MOUNT_BAR_U2 = (float)MOUNT_BAR_WIDTH / (float)BAR_WIDTH;
@@ -182,15 +187,15 @@ public class TargetHealthBar implements HudRenderCallback {
                 // Render Portrait
                 RenderSystem.enableBlend();
                 if (Options.hudPosition == HUDPosition.LEFT) {
-                    drawContext.drawTexture(RenderLayer::getGuiTextured, BorderRegistry.getBorder(this.target), 0, OFFSET_Y, 48f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Background
-                    drawContext.drawTexture(RenderLayer::getGuiTextured, BorderRegistry.getBorder(this.target), 0, OFFSET_Y, 0f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Foreground
+                    this.drawTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, 0, OFFSET_Y, BACKGROUND_Z, 48f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Background
+                    this.drawTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, 0, OFFSET_Y, FOREGROUND_Z, 0f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Foreground
                     RenderSystem.disableBlend();
 
                     drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), LEFT_TEXT_X, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
                 }
                 else {
-                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, 0.5f, 1f, 0f, 1f); // Background
-                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, 0f, 0.5f, 0f, 1f); // Foreground
+                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, BACKGROUND_Z, 0.5f, 1f, 0f, 1f); // Background
+                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, FOREGROUND_Z, 0f, 0.5f, 0f, 1f); // Foreground
                     RenderSystem.disableBlend();
 
                     drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), OFFSET_X - 1 - nameWidth, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
@@ -273,23 +278,25 @@ public class TargetHealthBar implements HudRenderCallback {
     }
 
     private int glideHealth (int trueValue, float glideFactor) {
-        this.currentHealthWidth += (float)(trueValue - this.currentHealthWidth) * MathHelper.clamp(glideFactor, 0.001f, 1f);
+        this.currentHealthWidth += (int)((float)(trueValue - this.currentHealthWidth) * MathHelper.clamp(glideFactor, 0.001f, 1f));
         return this.currentHealthWidth;
     }
 
     private int glideVehicleHealth (int trueValue, float glideFactor) {
-        this.currentVehicleHealthWidth += (float)(trueValue - this.currentVehicleHealthWidth) * MathHelper.clamp(glideFactor, 0.001f, 1f);
+        this.currentVehicleHealthWidth += (int)((float)(trueValue - this.currentVehicleHealthWidth) * MathHelper.clamp(glideFactor, 0.001f, 1f));
         return this.currentVehicleHealthWidth;
     }
 
     private void renderBar (DrawContext drawContext, int width, int barIndex) {
-        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
-        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (BAR_WIDTH - width), BAR_X + BAR_WIDTH, BAR_Y, BAR_Y + BAR_HEIGHT, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
+        Vector3f barColour = Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
+        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
+        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (BAR_WIDTH - width), BAR_X + BAR_WIDTH, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
     }
 
     private void renderMountBar (DrawContext drawContext, int width, int barIndex) {
-        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
-        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (MOUNT_BAR_WIDTH - width) + BAR_WIDTH_DIFF, BAR_X + BAR_WIDTH_DIFF + MOUNT_BAR_WIDTH, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient));
+        Vector3f barColour = Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
+        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
+        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (MOUNT_BAR_WIDTH - width) + BAR_WIDTH_DIFF, BAR_X + BAR_WIDTH_DIFF + MOUNT_BAR_WIDTH, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
     }
 
     private void reset () {
@@ -314,23 +321,42 @@ public class TargetHealthBar implements HudRenderCallback {
         }
     }
 
-    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, float u1, float u2, float v1, float v2) {
-        context.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u2, u1, v1, v2, Colors.WHITE);
+    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
+        this.drawTexturedQuad(texture, context, x1, x2, y1, y2, z, u2, u1, v1, v2, Options.WHITE);
     }
 
-    private void drawTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, float u1, float u2, float v1, float v2, Vector3f colour) {
-        int intColour = 0xFF000000;
-        intColour += (int)(colour.x * 255) << 4;
-        intColour += (int)(colour.y * 255) << 2;
-        intColour += (int)(colour.z * 255f);
-        context.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u1, u2, v1, v2, intColour);
+    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2, Vector3f colour) {
+        this.drawTexturedQuad(texture, context, x1, x2, y1, y2, z, u2, u1, v1, v2, colour);
     }
 
-    private void drawHorizontallyMirroredTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, float u1, float u2, float v1, float v2, Vector3f colour) {
-        int intColour = 0xFF000000;
-        intColour += (int)(colour.x * 255f) << 4;
-        intColour += (int)(colour.y * 255f) << 2;
-        intColour += (int)(colour.z * 255f);
-        context.drawTexturedQuad(RenderLayer::getGuiTextured, texture, x1, x2, y1, y2, u2, u1, v1, v2, intColour);
+    private void drawTexturedQuad (Identifier texture, DrawContext context, int x, int y, int z, float u, float v, int width, int height, int textureWidth, int textureHeight) {
+        this.drawTexturedQuad(texture, context, x, x + width, y, y + height, z, u / (float)textureWidth, (u + (float)width) / (float)textureWidth, v / (float)textureHeight, (v + (float)height) / (float)textureHeight, Options.WHITE);
+    }
+
+    /**
+     * Recreation of {@link DrawContext#drawTexturedQuad(Function, Identifier, int, int, int, int, float, float, float, float, int)}
+     * that allows for changing the layering order (z-axis).
+     *
+     * @param texture
+     * @param context The DrawContext to get rendering data from.
+     * @param x1 The screen-coordinate of the leftmost pixel.
+     * @param x2 The screen-coordinate of the rightmost pixel.
+     * @param y1 The screen-coordinate of the topmost pixel.
+     * @param y2 The screen-coordinate of the bottommost pixel.
+     * @param z The z-axis, higher values will be over lower values.
+     * @param u1 As a percentage of the texture-width, the leftmost pixel to read and render.
+     * @param u2 As a percentage of the texture-width, the rightmost pixel to read and render.
+     * @param v1 As a percentage of the texture-height, the topmost pixel to read and render.
+     * @param v2 As a percentage of the texture-height, the bottommost pixel to read and render.
+     * @param colour Colour expressed as a vector. See {@link net.minecraft.util.math.Vec3d#unpackRgb(int)}
+     */
+    private void drawTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2, Vector3f colour) {
+        RenderLayer renderLayer = RenderLayer.getGuiTextured(texture);
+        Matrix4f matrix4f = context.getMatrices().peek().getPositionMatrix();
+        VertexConsumer vertexConsumer = context.vertexConsumers.getBuffer(renderLayer);
+        vertexConsumer.vertex(matrix4f, (float)x1, (float)y1, z).texture(u1, v1).color(colour.x, colour.y, colour.z, 1f);
+        vertexConsumer.vertex(matrix4f, (float)x1, (float)y2, z).texture(u1, v2).color(colour.x, colour.y, colour.z, 1f);
+        vertexConsumer.vertex(matrix4f, (float)x2, (float)y2, z).texture(u2, v2).color(colour.x, colour.y, colour.z, 1f);
+        vertexConsumer.vertex(matrix4f, (float)x2, (float)y1, z).texture(u2, v1).color(colour.x, colour.y, colour.z, 1f);
     }
 }

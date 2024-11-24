@@ -33,17 +33,16 @@ import net.minecraft.util.math.MathHelper;
 import java.util.List;
 
 public class EntityHealthBar {
+    public static boolean enabled = true;
+
     private static final Identifier BARS = ProviHealthClient.identifier("textures/gui/healthbars/in_world.png");
     private static final Identifier COMPAT_BARS = ProviHealthClient.identifier("textures/gui/healthbars/in_world_coloured.png");
     private static final float TEXTURE_SIZE = 64;
-
-    public static boolean enabled = true;
+    private static final int LIGHT = LightmapTextureManager.pack(15, 15);
 
     public static void render (EntityRenderState state, MatrixStack matrices, VertexConsumerProvider vertexConsumers, Quaternionf rotation, TextRenderer textRenderer) {
         IMixinEntityRenderState mixinState = (IMixinEntityRenderState)state;
         if (!enabled || !mixinState.provi_Health$isLiving() || !mixinState.provi_Health$shouldRenderHealth() || !MinecraftClient.isHudEnabled()) return;
-
-        int light = LightmapTextureManager.pack(15, 15);
 
         matrices.push();
         matrices.translate(0f, state.height + 0.45f - (0.003f / Options.worldHealthBarScale) + Options.worldOffsetY, 0f);
@@ -69,14 +68,14 @@ public class EntityHealthBar {
 
         Matrix4f model = matrices.peek().getPositionMatrix();
         renderBar(model, vertexConsumer, 1, 1f, false); // Empty
-        renderBar(model, vertexConsumer, 0, mixinState.provi_Health$getHealth().getMax() / mixinState.provi_Health$getHealth().getLerped(), false); // Health
+        renderBar(model, vertexConsumer, 0, mixinState.provi_Health$getHealth().getLerped() / mixinState.provi_Health$getHealth().getMax(), false); // Health
 
-        if (mixinState.provi_Health$getMountHealth().getMax() > 0) {
+        if (mixinState.provi_Health$getMountHealth() != null && mixinState.provi_Health$getMountHealth().getMax() > 0) {
             matrices.push();
             matrices.translate(0f, -1f * (7f / TEXTURE_SIZE), 0f);
             Matrix4f mountModel = matrices.peek().getPositionMatrix();
             renderBar(mountModel, vertexConsumer, 1, 1f, true); // Empty
-            renderBar(mountModel, vertexConsumer, 0, mixinState.provi_Health$getMountHealth().getMax() / mixinState.provi_Health$getMountHealth().getLerped(), true); // Health
+            renderBar(mountModel, vertexConsumer, 0, mixinState.provi_Health$getMountHealth().getLerped() / mixinState.provi_Health$getMountHealth().getMax(), true); // Health
             matrices.pop();
         }
 
@@ -113,33 +112,33 @@ public class EntityHealthBar {
                     nameY -= lineHeight;
                 }
 
-                if (mixinState.provi_Health$shouldRenderHealth() && !state.sneaking && Options.seeThroughTextType != SeeThroughText.NONE) {
+                if (mixinState.provi_Health$shouldRenderLabel() && !state.sneaking && Options.seeThroughTextType != SeeThroughText.NONE) {
                     if (Options.seeThroughTextType == SeeThroughText.STANDARD) {
                         if (Options.worldShadows) {
-                            EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX + 1, nameY + 1, healthX + 1, healthY + 1, lineHeight, 1, 0xFF404040, false, textModel, vertexConsumers, TextLayerType.NORMAL, light);
+                            EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX + 1, nameY + 1, healthX + 1, healthY + 1, lineHeight, 1, 0xFF404040, false, textModel, vertexConsumers, TextLayerType.NORMAL, LIGHT);
                         }
 
                         matrices.translate(0, 0, 0.03f);
                         textModel = matrices.peek().getPositionMatrix();
-                        EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFFFF, false, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, light);
+                        EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFFFF, false, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, LIGHT);
                     }
                     else { // SeeThroughText.FULL
-                        EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, light);
+                        EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.SEE_THROUGH, LIGHT);
                     }
                 }
                 else {
-                    EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, light);
+                    EntityHealthBar.renderFullText(textRenderer, targetName, healthString, titles, nameX, nameY, healthX, healthY, lineHeight, 0, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, LIGHT);
                 }
             }
             else {
-                textRenderer.draw(healthString, -(textRenderer.getWidth(healthString)) / 2f, -lineHeight, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
+                textRenderer.draw(healthString, -(textRenderer.getWidth(healthString)) / 2f, -lineHeight, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, LIGHT);
 
                 float titleX;
                 float titleY = -lineHeight;
                 for (Text title : titles) {
                     titleX = -textRenderer.getWidth(title) / 2f;
                     titleY -= lineHeight;
-                    textRenderer.draw(title, titleX, titleY, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, light);
+                    textRenderer.draw(title, titleX, titleY, 0xFFFFFFFF, Options.worldShadows, textModel, vertexConsumers, TextLayerType.NORMAL, 0, LIGHT);
                 }
             }
             matrices.pop();
@@ -169,6 +168,7 @@ public class EntityHealthBar {
     }
 
     private static void renderBar (Matrix4f model, VertexConsumer vertexConsumer, int index, float percentage, boolean isMount) {
+        percentage = MathHelper.clamp(percentage, 0f, 1f);
         if (isMount) percentage = MathHelper.lerp(percentage, 3f / TEXTURE_SIZE, 61f / TEXTURE_SIZE);
 
         // As of 1.21, the rendering was changed for whatever reason and the bars were facing in the wrong direction (which makes them invisible).

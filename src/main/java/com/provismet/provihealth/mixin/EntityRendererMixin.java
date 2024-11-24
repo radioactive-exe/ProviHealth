@@ -2,6 +2,7 @@ package com.provismet.provihealth.mixin;
 
 import com.provismet.provihealth.hud.BorderRegistry;
 import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
+import com.provismet.provihealth.interfaces.IMixinLivingEntity;
 import com.provismet.provihealth.util.Visibility;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -55,50 +56,33 @@ public abstract class EntityRendererMixin {
     private void modifyRenderState (Entity entity, EntityRenderState state, float tickDelta, CallbackInfo info) {
         if (entity instanceof LivingEntity living) { // Mixin here instead of LivingEntityRenderer because some mods have mobs that bypass it.
             IMixinEntityRenderState mixinState = (IMixinEntityRenderState)state;
-            if (mixinState.provi_Health$getHealth() == null) mixinState.provi_Health$setHealth(living.getHealth());
+
+            mixinState.provi_Health$setHealth(((IMixinLivingEntity)living).provi_Health$getHealthContainer());
+            if (mixinState.provi_Health$getHealth() == null) { // This can only occur if the mob is rendered before its first tick.
+                mixinState.provi_Health$setShouldRenderHealth(false);
+                mixinState.provi_Health$setShouldRenderLabel(false);
+                mixinState.provi_Health$setIsLiving(false);
+                return;
+            }
+
             mixinState.provi_Health$getHealth().lerp(tickDelta);
             mixinState.provi_Health$setShouldRenderHealth(Options.shouldRenderHealthFor(living));
             mixinState.provi_Health$setIsLiving(true);
             mixinState.provi_Health$setShouldRenderLabel(this.hasLabel(entity, state.squaredDistanceToCamera));
 
-            // Once per tick updates
-            if (living.age != state.age) {
-                mixinState.provi_Health$setTitles(BorderRegistry.getTitle(living, true, false));
-                mixinState.provi_Health$setHealth(living.getHealth());
-                mixinState.provi_Health$getHealth().setMaxHealth(living.getMaxHealth());
+            mixinState.provi_Health$setTitles(BorderRegistry.getTitle(living, true, false));
 
-                // If another valid entity is riding this one, don't render a healthbar.
-                if ((living.hasPassengers() &&
-                    living.getFirstPassenger() instanceof LivingEntity livingRider &&
-                    !Options.blacklist.contains(EntityType.getId(livingRider.getType()).toString())) ||
-                    living == MinecraftClient.getInstance().player ||
-                    !Visibility.isVisible(living)
-                ) {
-                    mixinState.provi_Health$setShouldRenderHealth(false);
-                }
-
-                // Handling for mob stacks.
-                if (entity.hasVehicle()) {
-                    float vehicleHealthDeep = 0f;
-                    float vehicleMaxHealthDeep = 0f;
-
-                    Entity currentEntity = entity.getVehicle();
-                    while (currentEntity != null) {
-                        if (currentEntity instanceof LivingEntity currentLiving) {
-                            vehicleHealthDeep += currentLiving.getHealth();
-                            vehicleMaxHealthDeep += currentLiving.getMaxHealth();
-                        }
-                        currentEntity = currentEntity.getVehicle();
-                    }
-
-                    mixinState.provi_Health$setMountHealth(vehicleHealthDeep);
-                    mixinState.provi_Health$getMountHealth().lerp(tickDelta);
-                    mixinState.provi_Health$getMountHealth().setMaxHealth(vehicleMaxHealthDeep);
-                }
-                else {
-                    mixinState.provi_Health$setMountHealth(0f);
-                }
+            // If another valid entity is riding this one, don't render a healthbar.
+            if ((living.hasPassengers() &&
+                living.getFirstPassenger() instanceof LivingEntity livingRider &&
+                !Options.blacklist.contains(EntityType.getId(livingRider.getType()).toString())) ||
+                living == MinecraftClient.getInstance().player ||
+                !Visibility.isVisible(living)
+            ) {
+                mixinState.provi_Health$setShouldRenderHealth(false);
             }
+
+            mixinState.provi_Health$setMountHealth(((IMixinLivingEntity)living).provi_Health$getMountHealthContainer());
         }
     }
 
