@@ -102,9 +102,10 @@ public class TextParticle extends SpriteBillboardParticle {
 	}
 
     @Override
-    public void buildGeometry (VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
-        super.buildGeometry(vertexConsumer, camera, tickDelta);
+    public void render (VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
+        super.render(vertexConsumer, camera, tickDelta);
 
+        // TODO: THIS CAUSES CRASHES NOW
         Quaternionf quaternionf = camera.getRotation();
         Vec3d cameraPos = camera.getPos();
         float dX = (float)(MathHelper.lerp(tickDelta, this.prevPosX, this.x) - cameraPos.getX());
