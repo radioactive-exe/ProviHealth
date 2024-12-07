@@ -1,6 +1,7 @@
 package com.provismet.provihealth.config;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.provismet.lilylib.util.JsonBuilder;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalEntityTypeTags;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -16,7 +17,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.joml.Vector3f;
@@ -29,8 +29,8 @@ public class Options {
 
     public static int maxHealthBarTicks = 40;
 
-    public static List<String> blacklist = Arrays.asList("minecraft:armor_stand");
-    public static List<String> blacklistHUD = Arrays.asList("minecraft:armor_stand");
+    public static List<String> blacklist = List.of("minecraft:armor_stand");
+    public static List<String> blacklistHUD = List.of("minecraft:armor_stand");
 
     public static VisibilityType bosses = VisibilityType.ALWAYS_HIDE;
     public static VisibilityType hostile = VisibilityType.ALWAYS_SHOW;
@@ -136,7 +136,7 @@ public class Options {
     }
 
     public static void save () {
-        JsonHelper json = new JsonHelper();
+        JsonBuilder json = new JsonBuilder();
         String jsonData = json.start()
             .append("hudDuration", maxHealthBarTicks).newLine()
             .append("hudIcon", showHudIcon).newLine()
