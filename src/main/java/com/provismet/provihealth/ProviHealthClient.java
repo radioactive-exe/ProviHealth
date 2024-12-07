@@ -40,7 +40,7 @@ public class ProviHealthClient implements ClientModInitializer {
         BorderRegistry.sortTitles();
 
         Options.load();
-        Particles.register();
+        Particles.init();
     }
     
 }

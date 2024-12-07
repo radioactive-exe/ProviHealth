@@ -1,5 +1,8 @@
 package com.provismet.provihealth.mixin;
 
+import com.provismet.provihealth.config.Options;
+import com.provismet.provihealth.interfaces.IMixinLivingEntity;
+import com.provismet.provihealth.particle.HealthParticleEffect;
 import com.provismet.provihealth.util.HealthContainer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -7,10 +10,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import com.provismet.provihealth.config.Options;
-import com.provismet.provihealth.interfaces.IMixinLivingEntity;
-import com.provismet.provihealth.particle.TextParticleEffect;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -74,10 +73,10 @@ public abstract class LivingEntityMixin extends Entity implements IMixinLivingEn
         final Entity cameraEntity = MinecraftClient.getInstance().getCameraEntity();
         if (cameraEntity != null && this != cameraEntity && this.distanceTo(MinecraftClient.getInstance().getCameraEntity()) <= Options.maxParticleDistance) {
             if (this.container.getCurrent() < this.container.getPrevious() && Options.spawnDamageParticles) {
-                this.getWorld().addParticle(new TextParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale, Options.damageParticleTextColour, String.format("%d", (int)this.container.getPrevious() - (int)this.container.getCurrent())), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
+                this.getWorld().addParticle(new HealthParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale, Options.damageParticleTextColour, String.format("%d", (int)this.container.getPrevious() - (int)this.container.getCurrent())), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
             }
             else if (this.container.getCurrent() > this.container.getPrevious() && Options.spawnHealingParticles) {
-                this.getWorld().addParticle(new TextParticleEffect(Options.unpackedHealing, Options.healingAlpha, Options.particleScale, Options.healingParticleTextColour, String.format("%d", (int)this.container.getCurrent() - (int)this.container.getPrevious())), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
+                this.getWorld().addParticle(new HealthParticleEffect(Options.unpackedHealing, Options.healingAlpha, Options.particleScale, Options.healingParticleTextColour, String.format("%d", (int)this.container.getCurrent() - (int)this.container.getPrevious())), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
             }
         }
     }

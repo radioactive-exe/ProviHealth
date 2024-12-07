@@ -1,6 +1,6 @@
 package com.provismet.provihealth.particle;
 
-import com.provismet.lilylib.util.MoreMath.RightAngledTriangle;
+import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.DamageParticleType;
 
@@ -14,70 +14,38 @@ import net.minecraft.client.particle.SpriteProvider;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Quaternionf;
 
 public class TextParticle extends SpriteBillboardParticle {
     private final String text;
-    private final float rotationSpeed;
     private final float maxScale;
     private final int textColour;
+    private final TextRenderer textRenderer;
 
     private float prevScale;
 
-    protected TextParticle (ClientWorld clientWorld, double x, double y, double z, TextParticleEffect particleEffect) {
+    protected TextParticle (ClientWorld clientWorld, double x, double y, double z, double velocityX, double velocityY, double velocityZ, TextParticleEffect particleEffect) {
         super(clientWorld, x, y, z);
 
-        this.red = particleEffect.colour().x();
-        this.green = particleEffect.colour().y();
-        this.blue = particleEffect.colour().z();
         this.scale = 0f;
         this.prevScale = 0f;
-        this.alpha = particleEffect.alpha();
         this.textColour = particleEffect.textColour();
         this.text = particleEffect.text();
         this.maxAge = 40;
-
-        this.rotationSpeed = (float)Math.toRadians((this.random.nextDouble() * 1.5 + 0.5) * (this.random.nextBoolean() ? 10 : -10));
+        this.textRenderer = MinecraftClient.getInstance().textRenderer;
         this.maxScale = particleEffect.scale();
-
-        final double sign = this.random.nextBoolean() ? 1 : -1;
-        final RightAngledTriangle triangle = new RightAngledTriangle(new Vec3d(this.x, this.y, this.z), MinecraftClient.getInstance().player.getEyePos());
-
-        switch (Options.particleType) {
-            case RISING:
-                this.setPos(this.x + 0.5 * -triangle.cosine() * sign, this.y, this.z + 0.5 * triangle.sine() * sign);
-                this.velocityX = 0;
-                this.velocityY = 0.1;
-                this.velocityZ = 0;
-                this.velocityMultiplier = 0.85f;       
-                break;
-
-            case GRAVITY:
-                this.setPos(this.x + 0.5 * -triangle.cosine() * sign, this.y + this.random.nextDouble() * 0.5, this.z + 0.5 * triangle.sine() * sign);
-                double velBonus = this.random.nextDouble() * 0.025 + 0.05;
-                this.velocityX = velBonus * -triangle.cosine() * sign;
-                this.velocityY = 0.125;
-                this.velocityZ = velBonus * triangle.sine() * sign;
-                break;
-
-            case STATIC:
-                this.setPos(this.x + 0.5 * -triangle.cosine() * sign, this.y + this.random.nextDouble() * 0.75, this.z + 0.5 * triangle.sine() * sign);
-                this.velocityX = 0;
-                this.velocityY = 0;
-                this.velocityZ = 0;
-                break;
-        
-            default:
-                break;
-        }
 
         this.prevPosX = this.x;
         this.prevPosY = this.y;
         this.prevPosZ = this.z;
+
+        this.velocityX = velocityX;
+        this.velocityY = velocityY;
+        this.velocityZ = velocityZ;
     }
 
     @Override
@@ -87,9 +55,6 @@ public class TextParticle extends SpriteBillboardParticle {
 
         if (this.age > this.maxAge / 2) this.scale -= this.maxScale / (this.maxAge / 2f);
         else if (this.scale < this.maxScale) this.scale += this.maxScale / 5f;
-        
-        this.prevAngle = this.angle;
-        this.angle += this.rotationSpeed;
 
         if (Options.particleType == DamageParticleType.GRAVITY) {
             if (this.onGround) {
@@ -103,29 +68,39 @@ public class TextParticle extends SpriteBillboardParticle {
 
     @Override
     public void render (VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
-        super.render(vertexConsumer, camera, tickDelta);
+    }
 
-        // TODO: THIS CAUSES CRASHES NOW
-        Quaternionf quaternionf = camera.getRotation();
-        Vec3d cameraPos = camera.getPos();
-        float dX = (float)(MathHelper.lerp(tickDelta, this.prevPosX, this.x) - cameraPos.getX());
-        float dY = (float)(MathHelper.lerp(tickDelta, this.prevPosY, this.y) - cameraPos.getY());
-        float dZ = (float)(MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - cameraPos.getZ());
+    @Override
+    public void renderCustom (MatrixStack matrices, VertexConsumerProvider vertexConsumers, Camera camera, float tickDelta) {
+        super.renderCustom(matrices, vertexConsumers, camera, tickDelta);
 
-        // I stack-traced buildGeometry, this block replicates the MatrixStack and then moves the text to the right place.
-        MatrixStack matrices = new MatrixStack();
+        matrices.push();
+        float dX = (float)(MathHelper.lerp(tickDelta, this.prevPosX, this.x) - camera.getPos().getX());
+        float dY = (float)(MathHelper.lerp(tickDelta, this.prevPosY, this.y) - camera.getPos().getY());
+        float dZ = (float)(MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - camera.getPos().getZ());
+
         matrices.translate(dX, dY, dZ);
-        matrices.multiply(quaternionf);
-
+        matrices.multiply(camera.getRotation());
         float scaleSize = this.getSize(tickDelta) / 6f;
         matrices.scale(scaleSize, -scaleSize, scaleSize);
 
-        MinecraftClient.getInstance().textRenderer.draw(this.text, 0f, 0f, this.textColour, Options.particleTextShadow, matrices.peek().getPositionMatrix(), MinecraftClient.getInstance().getBufferBuilders().getEntityVertexConsumers(), TextRenderer.TextLayerType.POLYGON_OFFSET, 0, this.getBrightness(tickDelta));
+        this.textRenderer.draw(
+            this.text,
+            0f, 0f,
+            this.textColour,
+            Options.particleTextShadow,
+            matrices.peek().getPositionMatrix(),
+            vertexConsumers,
+            TextRenderer.TextLayerType.POLYGON_OFFSET,
+            0,
+            this.getBrightness(tickDelta)
+        );
+        matrices.pop();
     }
 
     @Override
     public ParticleTextureSheet getType () {
-        return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
+        return ParticleTextureSheet.CUSTOM;
     }
 
    @Override
@@ -163,7 +138,7 @@ public class TextParticle extends SpriteBillboardParticle {
 
         @Override
         public Particle createParticle (TextParticleEffect particleEffect, ClientWorld clientWorld, double x, double y, double z, double velX, double velY, double velZ) {
-            TextParticle textParticle = new TextParticle(clientWorld, x, y, z, particleEffect);
+            TextParticle textParticle = new TextParticle(clientWorld, x, y, z, velX, velY, velZ, particleEffect);
             textParticle.setSprite(this.spriteProvider);
             return textParticle;
         }
