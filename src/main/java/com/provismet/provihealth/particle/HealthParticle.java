@@ -29,7 +29,6 @@ public class HealthParticle extends SpriteBillboardParticle {
 
     protected HealthParticle (ClientWorld clientWorld, double x, double y, double z, HealthParticleEffect particleEffect) {
         super(clientWorld, x, y, z);
-        ProviHealthClient.LOGGER.info("Spawned text.");
 
         this.red = particleEffect.colour().x();
         this.green = particleEffect.colour().y();
