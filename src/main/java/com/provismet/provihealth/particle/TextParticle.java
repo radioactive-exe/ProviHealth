@@ -46,6 +46,8 @@ public class TextParticle extends SpriteBillboardParticle {
         this.velocityX = velocityX;
         this.velocityY = velocityY;
         this.velocityZ = velocityZ;
+
+        if (Options.particleType == DamageParticleType.RISING) this.velocityMultiplier = 0.85f;
     }
 
     @Override
