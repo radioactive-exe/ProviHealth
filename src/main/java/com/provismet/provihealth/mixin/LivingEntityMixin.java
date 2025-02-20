@@ -3,6 +3,7 @@ package com.provismet.provihealth.mixin;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.interfaces.IMixinLivingEntity;
 import com.provismet.provihealth.particle.HealthParticleEffect;
+import com.provismet.provihealth.util.HealthCalculator;
 import com.provismet.provihealth.util.HealthContainer;
 import com.provismet.provihealth.util.StatusEffectIdentifier;
 import net.minecraft.entity.data.TrackedData;
@@ -79,24 +80,9 @@ public abstract class LivingEntityMixin extends Entity implements IMixinLivingEn
         this.container.set(this.getHealth());
         this.container.setMaxHealth(this.getMaxHealth());
 
-        if (this.hasVehicle()) {
-            float vehicleHealthDeep = 0f;
-            float vehicleMaxHealthDeep = 0f;
-
-            Entity currentEntity = this.getVehicle();
-            while (currentEntity != null) {
-                if (currentEntity instanceof LivingEntity currentLiving) {
-                    vehicleHealthDeep += currentLiving.getHealth();
-                    vehicleMaxHealthDeep += currentLiving.getMaxHealth();
-                }
-                currentEntity = currentEntity.getVehicle();
-            }
-
-            if (this.mountContainer == null) this.mountContainer = new HealthContainer(vehicleHealthDeep);
-            else this.mountContainer.set(vehicleHealthDeep);
-            this.mountContainer.setMaxHealth(vehicleMaxHealthDeep);
-        }
-        else this.mountContainer = null;
+        HealthContainer currentMountHealth = HealthCalculator.getRecursiveMountHealth(this, Options.BarType.WORLD);
+        if (this.mountContainer == null || currentMountHealth == null) this.mountContainer = currentMountHealth;
+        else this.mountContainer.setFrom(currentMountHealth);
 
         final Entity cameraEntity = MinecraftClient.getInstance().getCameraEntity();
         if (cameraEntity != null && this != cameraEntity && this.distanceTo(MinecraftClient.getInstance().getCameraEntity()) <= Options.maxParticleDistance) {
