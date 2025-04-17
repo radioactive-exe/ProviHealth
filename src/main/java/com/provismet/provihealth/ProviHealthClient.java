@@ -1,22 +1,20 @@
 package com.provismet.provihealth;
 
-import com.provismet.provihealth.util.StatusEffectIdentifier;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
-import net.minecraft.text.Text;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.provismet.provihealth.api.ProviHealthApi;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.hud.BorderRegistry;
 import com.provismet.provihealth.hud.TargetHealthBar;
 import com.provismet.provihealth.particle.Particles;
-
+import com.provismet.provihealth.util.StatusEffectIdentifier;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProviHealthClient implements ClientModInitializer {
     public static final String MODID = "provihealth";
@@ -33,7 +31,7 @@ public class ProviHealthClient implements ClientModInitializer {
             ResourceManagerHelper.registerBuiltinResourcePack(identifier("square_bars"), container, Text.translatable("resource.provihealth.square_bars"), ResourcePackActivationType.NORMAL);
         });
 
-        HudRenderCallback.EVENT.register(new TargetHealthBar());
+        HudLayerRegistrationCallback.EVENT.register(new TargetHealthBar());
 
         FabricLoader.getInstance().getEntrypointContainers(MODID, ProviHealthApi.class).forEach(
             entrypoint -> {

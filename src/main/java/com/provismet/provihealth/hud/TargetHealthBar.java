@@ -3,6 +3,10 @@ package com.provismet.provihealth.hud;
 import com.provismet.provihealth.interfaces.IMixinLivingEntity;
 import com.provismet.provihealth.util.HealthCalculator;
 import com.provismet.provihealth.util.HealthContainer;
+import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
+import net.fabricmc.fabric.api.client.rendering.v1.LayeredDrawerWrapper;
+import net.minecraft.client.gui.LayeredDrawer;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderTickCounter;
@@ -11,6 +15,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.StatusEffectSpriteManager;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -24,10 +29,8 @@ import com.provismet.provihealth.config.Options.HUDType;
 import com.provismet.provihealth.util.Visibility;
 import com.provismet.provihealth.world.EntityHealthBar;
 
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -38,7 +41,9 @@ import net.minecraft.util.math.MathHelper;
 import java.util.List;
 import java.util.function.Function;
 
-public class TargetHealthBar implements HudRenderCallback {
+public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDrawer.Layer {
+    public static final Identifier HEALTHBAR_LAYER = ProviHealthClient.identifier("healthbar_layer");
+
     public static boolean disabledLabels = false;
 
     private static final Identifier BARS = ProviHealthClient.identifier("textures/gui/healthbars/bars.png");
@@ -80,18 +85,20 @@ public class TargetHealthBar implements HudRenderCallback {
     private int currentVehicleHealthWidth;
 
     @Override
-    public void onHudRender (DrawContext drawContext, RenderTickCounter tickCounter) {
-        float tickDelta = tickCounter.getTickDelta(true);
+    public void render (DrawContext drawContext, RenderTickCounter tickCounter) {
+        float tickDelta = tickCounter.getTickProgress(true);
         if (this.healthBarDuration > 0f) this.healthBarDuration -= tickDelta;
         else this.reset();
 
-        if (!MinecraftClient.isHudEnabled() || MinecraftClient.getInstance().getDebugHud().shouldShowDebugHud() || MinecraftClient.getInstance().player.isSpectator()) return;
+        if (!MinecraftClient.isHudEnabled()
+            || MinecraftClient.getInstance().getDebugHud().shouldShowDebugHud()
+            || (MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.isSpectator())) return;
 
-        boolean isNew = false;
+        boolean isNewTarget = false;
 
         if (MinecraftClient.getInstance().targetedEntity instanceof LivingEntity living) {
             if (!Visibility.isVisible(living)) return;
-            if (!living.equals(this.target)) isNew = true;
+            if (!living.equals(this.target)) isNewTarget = true;
             this.target = living;
             this.healthBarDuration = Options.maxHealthBarTicks;
         }
@@ -113,7 +120,7 @@ public class TargetHealthBar implements HudRenderCallback {
             int healthWidth = Math.round(BAR_WIDTH * healthPercent);
             int vehicleHealthWidth = Math.round(MOUNT_BAR_WIDTH * vehicleHealthPercent);
 
-            if (isNew) {
+            if (isNewTarget) {
                 this.currentHealthWidth = healthWidth;
                 this.currentVehicleHealthWidth = vehicleHealthWidth;
             }
@@ -202,18 +209,15 @@ public class TargetHealthBar implements HudRenderCallback {
             
             if (hudType != HUDType.NONE) {
                 // Render Portrait
-                RenderSystem.enableBlend();
                 if (Options.hudPosition == HUDPosition.LEFT) {
                     this.drawTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, 0, OFFSET_Y, BACKGROUND_Z, 48f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Background
                     this.drawTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, 0, OFFSET_Y, FOREGROUND_Z, 0f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Foreground
-                    RenderSystem.disableBlend();
 
                     drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), LEFT_TEXT_X, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
                 }
                 else {
                     this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, BACKGROUND_Z, 0.5f, 1f, 0f, 1f); // Background
                     this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, FOREGROUND_Z, 0f, 0.5f, 0f, 1f); // Foreground
-                    RenderSystem.disableBlend();
 
                     drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), OFFSET_X - 1 - nameWidth, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
                 }
@@ -221,14 +225,14 @@ public class TargetHealthBar implements HudRenderCallback {
                 // Render Paper Doll
                 if (Options.HUDCompat == HUDPortraitCompatMode.STANDARD) {
                     float prevTargetHeadYaw = this.target.headYaw;
-                    float prevPrevTargetHeadYaw = this.target.prevHeadYaw;
+                    float prevPrevTargetHeadYaw = this.target.lastHeadYaw;
                     float prevTargetBodyYaw = this.target.bodyYaw;
-                    float prevPrevTargetBodyYaw = this.target.prevBodyYaw;
+                    float prevPrevTargetBodyYaw = this.target.lastBodyYaw;
 
                     this.target.bodyYaw = Options.hudPosition.portraitYAW;
-                    this.target.prevBodyYaw = Options.hudPosition.portraitYAW;
+                    this.target.lastBodyYaw = Options.hudPosition.portraitYAW;
                     this.target.headYaw = Options.hudPosition.portraitYAW;
-                    this.target.prevHeadYaw = Options.hudPosition.portraitYAW;
+                    this.target.lastHeadYaw = Options.hudPosition.portraitYAW;
 
                     float renderHeight;
                     if (this.target.getEyeHeight(EntityPose.STANDING) >= this.target.getHeight() * 0.6) {
@@ -254,9 +258,9 @@ public class TargetHealthBar implements HudRenderCallback {
                     drawContext.disableScissor();
 
                     this.target.headYaw = prevTargetHeadYaw;
-                    this.target.prevHeadYaw = prevPrevTargetHeadYaw;
+                    this.target.lastHeadYaw = prevPrevTargetHeadYaw;
                     this.target.bodyYaw = prevTargetBodyYaw;
-                    this.target.prevBodyYaw = prevPrevTargetBodyYaw;
+                    this.target.lastBodyYaw = prevPrevTargetBodyYaw;
                 }
                 else if (Options.HUDCompat == HUDPortraitCompatMode.COMPAT) {
                     float yawOffset = -(Options.hudPosition.portraitYAW - this.target.getBodyYaw()) / MathHelper.DEGREES_PER_RADIAN;
@@ -371,7 +375,7 @@ public class TargetHealthBar implements HudRenderCallback {
      * @param u2 As a percentage of the texture-width, the rightmost pixel to read and render.
      * @param v1 As a percentage of the texture-height, the topmost pixel to read and render.
      * @param v2 As a percentage of the texture-height, the bottommost pixel to read and render.
-     * @param colour Colour expressed as a vector. See {@link net.minecraft.util.math.Vec3d#unpackRgb(int)}
+     * @param colour Colour expressed as a vector. See {@link Vec3d#unpackRgb(int)}
      */
     private void drawTexturedQuad (Identifier texture, DrawContext context, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2, Vector3f colour) {
         RenderLayer renderLayer = RenderLayer.getGuiTextured(texture);
@@ -381,5 +385,10 @@ public class TargetHealthBar implements HudRenderCallback {
         vertexConsumer.vertex(matrix4f, (float)x1, (float)y2, z).texture(u1, v2).color(colour.x, colour.y, colour.z, 1f);
         vertexConsumer.vertex(matrix4f, (float)x2, (float)y2, z).texture(u2, v2).color(colour.x, colour.y, colour.z, 1f);
         vertexConsumer.vertex(matrix4f, (float)x2, (float)y1, z).texture(u2, v1).color(colour.x, colour.y, colour.z, 1f);
+    }
+
+    @Override
+    public void register (LayeredDrawerWrapper layeredDrawerWrapper) {
+        layeredDrawerWrapper.attachLayerAfter(IdentifiedLayer.EXPERIENCE_LEVEL, TargetHealthBar.HEALTHBAR_LAYER, this);
     }
 }

@@ -1,8 +1,9 @@
 package com.provismet.provihealth.world;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
-import net.minecraft.client.gl.ShaderProgramKeys;
-import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
@@ -24,7 +25,6 @@ import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
@@ -53,21 +53,15 @@ public class EntityHealthBar {
         matrices.translate(0f, (mixinState.provi_Health$shouldRenderLabel() && !Options.overrideLabels && !(state.invisible || (state instanceof LivingEntityRenderState livingState && livingState.invisibleToPlayer)) ? 0.02f + 0.3f / Options.worldHealthBarScale : 0f), 0f);
         matrices.multiply(rotation); // This is the problem.
 
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder vertexConsumer;
+        RenderLayer layer = HealthBarRendering.getHealthBarLayer(BARS);
+        VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
 
+        /*
         if (Options.compatInWorld) {
             vertexConsumer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
-            RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX);
-            RenderSystem.setShaderTexture(0, COMPAT_BARS);
+            RenderSystem.setShaderTexture(0, MinecraftClient.getInstance().getTextureManager().getTexture(COMPAT_BARS).getGlTexture());
         }
-        else {
-            vertexConsumer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
-            RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX_COLOR);
-            RenderSystem.setShaderTexture(0, BARS);
-        }
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableBlend();
+         */
 
         Matrix4f model = matrices.peek().getPositionMatrix();
         renderBar(mixinState, model, vertexConsumer, BACKGROUND_BAR_INDEX, 1f, false); // Empty
@@ -82,7 +76,7 @@ public class EntityHealthBar {
             matrices.pop();
         }
 
-        BufferRenderer.drawWithGlobalProgram(vertexConsumer.end());
+        //layer.draw(vertexConsumer.end());
 
         // Health Text
         if (Options.showTextInWorld) {
@@ -147,8 +141,8 @@ public class EntityHealthBar {
             matrices.pop();
         }
 
-        RenderSystem.disableBlend();
-        RenderSystem.disableDepthTest();
+        GlStateManager._disableBlend();
+        GlStateManager._disableDepthTest();
         matrices.pop();
     }
 

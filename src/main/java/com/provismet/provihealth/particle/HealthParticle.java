@@ -74,11 +74,11 @@ public class HealthParticle extends SpriteBillboardParticle {
                 break;
         }
 
-        this.prevPosX = this.x;
-        this.prevPosY = this.y;
-        this.prevPosZ = this.z;
+        this.lastX = this.x;
+        this.lastY = this.y;
+        this.lastZ = this.z;
 
-        this.world.addParticle(
+        this.world.addParticleClient(
             TextParticleEffect.fromHealthParticleEffect(particleEffect),
             true,
             true,
@@ -95,7 +95,7 @@ public class HealthParticle extends SpriteBillboardParticle {
         if (this.age > this.maxAge / 2) this.scale -= this.maxScale / (this.maxAge / 2f);
         else if (this.scale < this.maxScale) this.scale += this.maxScale / 5f;
 
-        this.prevAngle = this.angle;
+        this.lastAngle = this.angle;
         this.angle += this.rotationSpeed;
 
         if (Options.particleType == Options.DamageParticleType.GRAVITY) {
@@ -136,7 +136,7 @@ public class HealthParticle extends SpriteBillboardParticle {
     }
 
     public Vec3d getPrevPos () {
-        return new Vec3d(this.prevPosX, this.prevPosY, this.prevPosZ);
+        return new Vec3d(this.lastX, this.lastY, this.lastZ);
     }
 
     public static class Factory implements ParticleFactory<HealthParticleEffect> {

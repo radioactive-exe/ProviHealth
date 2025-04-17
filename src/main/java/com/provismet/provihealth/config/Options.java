@@ -1,5 +1,8 @@
 package com.provismet.provihealth.config;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.provismet.lilylib.util.JsonBuilder;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalEntityTypeTags;
@@ -26,6 +29,8 @@ import com.google.gson.stream.JsonReader;
 import com.provismet.provihealth.ProviHealthClient;
 
 public class Options {
+    private static final String FILE = "./config/provihealth.json";
+
     public static final Vector3f WHITE = Vec3d.unpackRgb(0xFFFFFF).toVector3f();
 
     public static int maxHealthBarTicks = 40;
@@ -148,67 +153,63 @@ public class Options {
     }
 
     public static void save () {
-        JsonBuilder json = new JsonBuilder();
-        String jsonData = json.start()
-            .append("hudDuration", maxHealthBarTicks).newLine()
-            .append("hudIcon", showHudIcon).newLine()
-            .append("hudPortraits", useCustomHudPortraits).newLine()
-            .append("hudGlide", hudGlide).newLine()
-            .append("hudPosition", hudPosition.name()).newLine()
-            .append("hudOffsetY", hudOffsetPercent).newLine()
-            .append("hudGradient", hudGradient).newLine()
-            .append("hudStartColour", hudStartColour).newLine()
-            .append("hudEndColour", hudEndColour).newLine()
-            .append("replaceLabels", overrideLabels).newLine()
-            .append("worldHealthText", showTextInWorld).newLine()
-            .append("worldTextShadows", worldShadows).newLine()
-            .append("maxRenderDistance", maxRenderDistance).newLine()
-            .append("barScale", worldHealthBarScale).newLine()
-            .append("worldOffsetY", worldOffsetY).newLine()
-            .append("worldGradient", worldGradient).newLine()
-            .append("worldStartColour", worldStartColour).newLine()
-            .append("worldEndColour", worldEndColour).newLine()
-            .append("bossHealth", bosses.name()).newLine()
-            .append("bossTarget", bossesVisibilityOverride).newLine()
-            .append("hostileHealth", hostile.name()).newLine()
-            .append("hostileTarget", hostileVisibilityOverride).newLine()
-            .append("playerHealth", players.name()).newLine()
-            .append("playerTarget", playersVisibilityOverride).newLine()
-            .append("otherHealth", others.name()).newLine()
-            .append("otherTarget", othersVisibilityOverride).newLine()
-            .append("worldTitles", worldTitles).newLine()
-            .append("tintBackground", tintBackground).newLine()
-            .append("useTeamColours", useTeamColours).newLine()
-            .append("bossHUD", bossHUD.name()).newLine()
-            .append("hostileHUD", hostileHUD.name()).newLine()
-            .append("playerHUD", playerHUD.name()).newLine()
-            .append("otherHUD", otherHUD.name()).newLine()
-            .append("hudTitles", hudTitles).newLine()
-            .append("hudStatusEffects", hudStatuses).newLine()
-            .append("damageParticles", spawnDamageParticles).newLine()
-            .append("healingParticles", spawnHealingParticles).newLine()
-            .append("damageColour", damageColour).newLine()
-            .append("damageAlpha", damageAlpha).newLine()
-            .append("healingColour", healingColour).newLine()
-            .append("healingAlpha", healingAlpha).newLine()
-            .append("particleScale", particleScale).newLine()
-            .append("particleTextShadow", particleTextShadow).newLine()
-            .append("damageParticleTextColour", damageParticleTextColour).newLine()
-            .append("healingParticleTextColour", healingParticleTextColour).newLine()
-            .append("particleType", particleType.name()).newLine()
-            .append("maxParticleDistance", maxParticleDistance).newLine()
-            .append("topLayerTextType", seeThroughTextType.name()).newLine()
-            .append("compatWorldBar", compatInWorld).newLine()
-            .append("compatHudPaperdoll", HUDCompat.name()).newLine()
-            .createArray("healthBlacklist", blacklist).newLine()
-            .createArray("hudBlacklist", blacklistHUD).newLine(false)
-            .closeObject()
+        String jsonData = new JsonBuilder()
+            .append("hudDuration", maxHealthBarTicks)
+            .append("hudIcon", showHudIcon)
+            .append("hudPortraits", useCustomHudPortraits)
+            .append("hudGlide", hudGlide)
+            .append("hudPosition", hudPosition.name())
+            .append("hudOffsetY", hudOffsetPercent)
+            .append("hudGradient", hudGradient)
+            .append("hudStartColour", hudStartColour)
+            .append("hudEndColour", hudEndColour)
+            .append("replaceLabels", overrideLabels)
+            .append("worldHealthText", showTextInWorld)
+            .append("worldTextShadows", worldShadows)
+            .append("maxRenderDistance", maxRenderDistance)
+            .append("barScale", worldHealthBarScale)
+            .append("worldOffsetY", worldOffsetY)
+            .append("worldGradient", worldGradient)
+            .append("worldStartColour", worldStartColour)
+            .append("worldEndColour", worldEndColour)
+            .append("bossHealth", bosses.name())
+            .append("bossTarget", bossesVisibilityOverride)
+            .append("hostileHealth", hostile.name())
+            .append("hostileTarget", hostileVisibilityOverride)
+            .append("playerHealth", players.name())
+            .append("playerTarget", playersVisibilityOverride)
+            .append("otherHealth", others.name())
+            .append("otherTarget", othersVisibilityOverride)
+            .append("worldTitles", worldTitles)
+            .append("tintBackground", tintBackground)
+            .append("useTeamColours", useTeamColours)
+            .append("bossHUD", bossHUD.name())
+            .append("hostileHUD", hostileHUD.name())
+            .append("playerHUD", playerHUD.name())
+            .append("otherHUD", otherHUD.name())
+            .append("hudTitles", hudTitles)
+            .append("hudStatusEffects", hudStatuses)
+            .append("damageParticles", spawnDamageParticles)
+            .append("healingParticles", spawnHealingParticles)
+            .append("damageColour", damageColour)
+            .append("damageAlpha", damageAlpha)
+            .append("healingColour", healingColour)
+            .append("healingAlpha", healingAlpha)
+            .append("particleScale", particleScale)
+            .append("particleTextShadow", particleTextShadow)
+            .append("damageParticleTextColour", damageParticleTextColour)
+            .append("healingParticleTextColour", healingParticleTextColour)
+            .append("particleType", particleType.name())
+            .append("maxParticleDistance", maxParticleDistance)
+            .append("topLayerTextType", seeThroughTextType.name())
+            .append("compatWorldBar", compatInWorld)
+            .append("compatHudPaperdoll", HUDCompat.name())
+            .appendArray("healthBlacklist", blacklist)
+            .appendArray("hudBlacklist", blacklistHUD)
             .toString();
 
-        try {
-            FileWriter writer = new FileWriter("config/provihealth.json");
+        try (FileWriter writer = new FileWriter(FILE)) {
             writer.write(jsonData);
-            writer.close();
         }
         catch (IOException e) {
             ProviHealthClient.LOGGER.error("Error whilst saving config: ", e);
@@ -217,7 +218,7 @@ public class Options {
 
     public static void load () {
         try {
-            FileReader reader = new FileReader("config/provihealth.json");
+            FileReader reader = new FileReader(FILE);
             JsonReader parser = new JsonReader(reader);
 
             parser.beginObject();

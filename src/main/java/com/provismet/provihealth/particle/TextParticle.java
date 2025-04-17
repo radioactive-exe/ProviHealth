@@ -1,6 +1,5 @@
 package com.provismet.provihealth.particle;
 
-import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.DamageParticleType;
 
@@ -39,9 +38,9 @@ public class TextParticle extends SpriteBillboardParticle {
         this.textRenderer = MinecraftClient.getInstance().textRenderer;
         this.maxScale = particleEffect.scale();
 
-        this.prevPosX = this.x;
-        this.prevPosY = this.y;
-        this.prevPosZ = this.z;
+        this.lastX = this.x;
+        this.lastY = this.y;
+        this.lastZ = this.z;
 
         this.velocityX = velocityX;
         this.velocityY = velocityY;
@@ -77,9 +76,9 @@ public class TextParticle extends SpriteBillboardParticle {
         super.renderCustom(matrices, vertexConsumers, camera, tickDelta);
 
         matrices.push();
-        float dX = (float)(MathHelper.lerp(tickDelta, this.prevPosX, this.x) - camera.getPos().getX());
-        float dY = (float)(MathHelper.lerp(tickDelta, this.prevPosY, this.y) - camera.getPos().getY());
-        float dZ = (float)(MathHelper.lerp(tickDelta, this.prevPosZ, this.z) - camera.getPos().getZ());
+        float dX = (float)(MathHelper.lerp(tickDelta, this.lastX, this.x) - camera.getPos().getX());
+        float dY = (float)(MathHelper.lerp(tickDelta, this.lastY, this.y) - camera.getPos().getY());
+        float dZ = (float)(MathHelper.lerp(tickDelta, this.lastZ, this.z) - camera.getPos().getZ());
 
         matrices.translate(dX, dY, dZ);
         matrices.multiply(camera.getRotation());
@@ -128,7 +127,7 @@ public class TextParticle extends SpriteBillboardParticle {
     }
 
     public Vec3d getPrevPos () {
-        return new Vec3d(this.prevPosX, this.prevPosY, this.prevPosZ);
+        return new Vec3d(this.lastX, this.lastY, this.lastZ);
     }
 
     public static class Factory implements ParticleFactory<TextParticleEffect> {
