@@ -53,15 +53,14 @@ public class EntityHealthBar {
         matrices.translate(0f, (mixinState.provi_Health$shouldRenderLabel() && !Options.overrideLabels && !(state.invisible || (state instanceof LivingEntityRenderState livingState && livingState.invisibleToPlayer)) ? 0.02f + 0.3f / Options.worldHealthBarScale : 0f), 0f);
         matrices.multiply(rotation); // This is the problem.
 
-        RenderLayer layer = HealthBarRendering.getHealthBarLayer(BARS);
-        VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
-
-        /*
+        RenderLayer layer;
         if (Options.compatInWorld) {
-            vertexConsumer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
-            RenderSystem.setShaderTexture(0, MinecraftClient.getInstance().getTextureManager().getTexture(COMPAT_BARS).getGlTexture());
+            layer = HealthBarRendering.getHealthBarCompatibilityLayer(COMPAT_BARS);
         }
-         */
+        else {
+            layer = HealthBarRendering.getHealthBarLayer(BARS);
+        }
+        VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
 
         Matrix4f model = matrices.peek().getPositionMatrix();
         renderBar(mixinState, model, vertexConsumer, BACKGROUND_BAR_INDEX, 1f, false); // Empty
@@ -188,10 +187,10 @@ public class EntityHealthBar {
         final float Z = (float)index * -0.0001f;
 
         if (Options.compatInWorld) {
-            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V); // Bottom-Right
-            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V); // Bottom-Left
-            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V); // Top-Left
-            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V); // Top-Right
+            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).color(Options.WHITE.x, Options.WHITE.y, Options.WHITE.z, 1f); // Bottom-Right
+            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).color(Options.WHITE.x, Options.WHITE.y, Options.WHITE.z, 1f); // Bottom-Left
+            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).color(Options.WHITE.x, Options.WHITE.y, Options.WHITE.z, 1f); // Top-Left
+            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).color(Options.WHITE.x, Options.WHITE.y, Options.WHITE.z, 1f); // Top-Right
         }
         else {
             Vector3f colour;

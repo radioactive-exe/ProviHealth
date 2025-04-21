@@ -2,7 +2,6 @@ package com.provismet.provihealth.world;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.provismet.provihealth.ProviHealthClient;
 import net.minecraft.client.gl.RenderPipelines;
@@ -29,6 +28,24 @@ public abstract class HealthBarRendering {
             .build()
     );
 
+    public static final RenderPipeline HEALTH_BAR_COMPAT_PIPELINE = RenderPipelines.register(
+        RenderPipeline.builder()
+            .withLocation(ProviHealthClient.identifier("pipeline/healthbar_compat"))
+            .withVertexShader("core/entity")
+            .withFragmentShader("core/entity")
+            .withSampler("Sampler0")
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withShaderDefine("ALPHA_CUTOUT", 0.1F)
+            .withShaderDefine("EMISSIVE")
+            .withShaderDefine("NO_OVERLAY")
+            .withShaderDefine("NO_CARDINAL_LIGHTING")
+            .withShaderDefine("APPLY_TEXTURE_MATRIX")
+            .withVertexFormat(VertexFormats.POSITION_TEXTURE, VertexFormat.DrawMode.QUADS)
+            .withUniform("TextureMat", UniformType.MATRIX4X4)
+            .withCull(false)
+            .build()
+    );
+
     public static RenderLayer getHealthBarLayer (Identifier texture) {
         return RenderLayer.of(
             "provihealth_healthbar",
@@ -36,6 +53,21 @@ public abstract class HealthBarRendering {
             false,
             false,
             HEALTH_BAR_PIPELINE,
+            RenderLayer.MultiPhaseParameters.builder()
+                .texture(new RenderPhase.Texture(texture, TriState.FALSE, false))
+                .lightmap(RenderPhase.ENABLE_LIGHTMAP)
+                .overlay(RenderPhase.ENABLE_OVERLAY_COLOR)
+                .build(false)
+        );
+    }
+
+    public static RenderLayer getHealthBarCompatibilityLayer (Identifier texture) {
+        return RenderLayer.of(
+            "provihealth_healthbar_compat",
+            1536,
+            false,
+            false,
+            HEALTH_BAR_COMPAT_PIPELINE,
             RenderLayer.MultiPhaseParameters.builder()
                 .texture(new RenderPhase.Texture(texture, TriState.FALSE, false))
                 .lightmap(RenderPhase.ENABLE_LIGHTMAP)
