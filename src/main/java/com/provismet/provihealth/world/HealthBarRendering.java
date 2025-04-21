@@ -13,36 +13,29 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.TriState;
 
 public abstract class HealthBarRendering {
+    private static final RenderPipeline.Snippet HEALTH_BAR_SNIPPET = RenderPipeline.builder(RenderPipelines.POSITION_TEX_COLOR_SNIPPET, RenderPipelines.FOG_SNIPPET)
+        .withVertexShader("core/entity")
+        .withFragmentShader("core/entity")
+        .withShaderDefine("ALPHA_CUTOUT", 0.1F)
+        .withShaderDefine("EMISSIVE")
+        .withShaderDefine("NO_OVERLAY")
+        .withShaderDefine("NO_CARDINAL_LIGHTING")
+        .withShaderDefine("APPLY_TEXTURE_MATRIX")
+        .withUniform("TextureMat", UniformType.MATRIX4X4)
+        .withCull(false)
+        .buildSnippet();
+
     public static final RenderPipeline HEALTH_BAR_PIPELINE = RenderPipelines.register(
-        RenderPipeline.builder(RenderPipelines.POSITION_TEX_COLOR_SNIPPET)
+        RenderPipeline.builder(HEALTH_BAR_SNIPPET)
             .withLocation(ProviHealthClient.identifier("pipeline/healthbar"))
-            .withVertexShader("core/entity")
-            .withFragmentShader("core/entity")
-            .withShaderDefine("ALPHA_CUTOUT", 0.1F)
-            .withShaderDefine("EMISSIVE")
-            .withShaderDefine("NO_OVERLAY")
-            .withShaderDefine("NO_CARDINAL_LIGHTING")
-            .withShaderDefine("APPLY_TEXTURE_MATRIX")
-            .withUniform("TextureMat", UniformType.MATRIX4X4)
-            .withCull(false)
+            .withVertexFormat(VertexFormats.POSITION_TEXTURE_COLOR, VertexFormat.DrawMode.QUADS)
             .build()
     );
 
     public static final RenderPipeline HEALTH_BAR_COMPAT_PIPELINE = RenderPipelines.register(
-        RenderPipeline.builder()
+        RenderPipeline.builder(HEALTH_BAR_SNIPPET)
             .withLocation(ProviHealthClient.identifier("pipeline/healthbar_compat"))
-            .withVertexShader("core/entity")
-            .withFragmentShader("core/entity")
-            .withSampler("Sampler0")
-            .withBlend(BlendFunction.TRANSLUCENT)
-            .withShaderDefine("ALPHA_CUTOUT", 0.1F)
-            .withShaderDefine("EMISSIVE")
-            .withShaderDefine("NO_OVERLAY")
-            .withShaderDefine("NO_CARDINAL_LIGHTING")
-            .withShaderDefine("APPLY_TEXTURE_MATRIX")
             .withVertexFormat(VertexFormats.POSITION_TEXTURE, VertexFormat.DrawMode.QUADS)
-            .withUniform("TextureMat", UniformType.MATRIX4X4)
-            .withCull(false)
             .build()
     );
 
