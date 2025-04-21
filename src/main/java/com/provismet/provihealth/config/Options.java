@@ -2,9 +2,11 @@ package com.provismet.provihealth.config;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.provismet.lilylib.util.JsonBuilder;
+import com.provismet.lilylib.util.json.JsonBuilder;
+import com.provismet.lilylib.util.json.JsonReader;
+import com.provismet.provihealth.ProviHealthClient;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalEntityTypeTags;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -14,19 +16,14 @@ import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
-import com.google.gson.stream.JsonReader;
-import com.provismet.provihealth.ProviHealthClient;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
 
 public class Options {
     private static final String FILE = "./config/provihealth.json";
@@ -154,58 +151,66 @@ public class Options {
 
     public static void save () {
         String jsonData = new JsonBuilder()
-            .append("hudDuration", maxHealthBarTicks)
-            .append("hudIcon", showHudIcon)
-            .append("hudPortraits", useCustomHudPortraits)
-            .append("hudGlide", hudGlide)
-            .append("hudPosition", hudPosition.name())
-            .append("hudOffsetY", hudOffsetPercent)
-            .append("hudGradient", hudGradient)
-            .append("hudStartColour", hudStartColour)
-            .append("hudEndColour", hudEndColour)
-            .append("replaceLabels", overrideLabels)
-            .append("worldHealthText", showTextInWorld)
-            .append("worldTextShadows", worldShadows)
-            .append("maxRenderDistance", maxRenderDistance)
-            .append("barScale", worldHealthBarScale)
-            .append("worldOffsetY", worldOffsetY)
-            .append("worldGradient", worldGradient)
-            .append("worldStartColour", worldStartColour)
-            .append("worldEndColour", worldEndColour)
-            .append("bossHealth", bosses.name())
-            .append("bossTarget", bossesVisibilityOverride)
-            .append("hostileHealth", hostile.name())
-            .append("hostileTarget", hostileVisibilityOverride)
-            .append("playerHealth", players.name())
-            .append("playerTarget", playersVisibilityOverride)
-            .append("otherHealth", others.name())
-            .append("otherTarget", othersVisibilityOverride)
-            .append("worldTitles", worldTitles)
-            .append("tintBackground", tintBackground)
-            .append("useTeamColours", useTeamColours)
-            .append("bossHUD", bossHUD.name())
-            .append("hostileHUD", hostileHUD.name())
-            .append("playerHUD", playerHUD.name())
-            .append("otherHUD", otherHUD.name())
-            .append("hudTitles", hudTitles)
-            .append("hudStatusEffects", hudStatuses)
-            .append("damageParticles", spawnDamageParticles)
-            .append("healingParticles", spawnHealingParticles)
-            .append("damageColour", damageColour)
-            .append("damageAlpha", damageAlpha)
-            .append("healingColour", healingColour)
-            .append("healingAlpha", healingAlpha)
-            .append("particleScale", particleScale)
-            .append("particleTextShadow", particleTextShadow)
-            .append("damageParticleTextColour", damageParticleTextColour)
-            .append("healingParticleTextColour", healingParticleTextColour)
-            .append("particleType", particleType.name())
-            .append("maxParticleDistance", maxParticleDistance)
-            .append("topLayerTextType", seeThroughTextType.name())
-            .append("compatWorldBar", compatInWorld)
-            .append("compatHudPaperdoll", HUDCompat.name())
-            .appendArray("healthBlacklist", blacklist)
-            .appendArray("hudBlacklist", blacklistHUD)
+            .append("hud", new JsonBuilder()
+                .append("hudDuration", maxHealthBarTicks)
+                .append("hudIcon", showHudIcon)
+                .append("hudPortraits", useCustomHudPortraits)
+                .append("hudGlide", hudGlide)
+                .append("hudPosition", hudPosition.name())
+                .append("hudOffsetY", hudOffsetPercent)
+                .append("hudGradient", hudGradient)
+                .append("hudStartColour", hudStartColour)
+                .append("hudEndColour", hudEndColour)
+                .append("bossHUD", bossHUD.name())
+                .append("hostileHUD", hostileHUD.name())
+                .append("playerHUD", playerHUD.name())
+                .append("otherHUD", otherHUD.name())
+                .append("hudTitles", hudTitles)
+                .append("hudStatusEffects", hudStatuses)
+                .appendArray("hudBlacklist", blacklistHUD)
+            )
+            .append("world", new JsonBuilder()
+                .append("replaceLabels", overrideLabels)
+                .append("worldHealthText", showTextInWorld)
+                .append("worldTextShadows", worldShadows)
+                .append("maxRenderDistance", maxRenderDistance)
+                .append("barScale", worldHealthBarScale)
+                .append("worldOffsetY", worldOffsetY)
+                .append("worldGradient", worldGradient)
+                .append("worldStartColour", worldStartColour)
+                .append("worldEndColour", worldEndColour)
+                .append("bossHealth", bosses.name())
+                .append("bossTarget", bossesVisibilityOverride)
+                .append("hostileHealth", hostile.name())
+                .append("hostileTarget", hostileVisibilityOverride)
+                .append("playerHealth", players.name())
+                .append("playerTarget", playersVisibilityOverride)
+                .append("otherHealth", others.name())
+                .append("otherTarget", othersVisibilityOverride)
+                .append("worldTitles", worldTitles)
+                .append("tintBackground", tintBackground)
+                .append("useTeamColours", useTeamColours)
+                .appendArray("healthBlacklist", blacklist)
+            )
+            .append("particles", new JsonBuilder()
+                .append("damageParticles", spawnDamageParticles)
+                .append("healingParticles", spawnHealingParticles)
+                .append("damageColour", damageColour)
+                .append("damageAlpha", damageAlpha)
+                .append("healingColour", healingColour)
+                .append("healingAlpha", healingAlpha)
+                .append("particleScale", particleScale)
+                .append("particleTextShadow", particleTextShadow)
+                .append("damageParticleTextColour", damageParticleTextColour)
+                .append("healingParticleTextColour", healingParticleTextColour)
+                .append("particleType", particleType.name())
+                .append("maxParticleDistance", maxParticleDistance)
+            )
+            .append("compatibility", new JsonBuilder()
+                .append("topLayerTextType", seeThroughTextType.name())
+                .append("compatWorldBar", compatInWorld)
+                .append("compatHudPaperdoll", HUDCompat.name())
+            )
             .toString();
 
         try (FileWriter writer = new FileWriter(FILE)) {
@@ -218,277 +223,115 @@ public class Options {
 
     public static void load () {
         try {
-            FileReader reader = new FileReader(FILE);
-            JsonReader parser = new JsonReader(reader);
-
-            parser.beginObject();
-            while (parser.hasNext()) {
-                final String label = parser.nextName();
-
-                switch (label) {
-                    case "hudDuration":
-                        maxHealthBarTicks = parser.nextInt();
-                        break;
-                    
-                    case "hudIcon":
-                        showHudIcon = parser.nextBoolean();
-                        break;
-                    
-                    case "hudPortraits":
-                        useCustomHudPortraits = parser.nextBoolean();
-                        break;
-                    
-                    case "hudGlide":
-                        hudGlide = (float)parser.nextDouble();
-                        break;
-                    
-                    case "hudPosition":
-                        hudPosition = HUDPosition.valueOf(parser.nextString());
-                        break;
-
-                    case "hudOffsetY":
-                        hudOffsetPercent = parser.nextInt();
-                        break;
-
-                    case "hudGradient":
-                        hudGradient = parser.nextBoolean();
-                        break;
-                    
-                    case "hudStartColour":
-                        hudStartColour = parser.nextInt();
-                        break;
-
-                    case "hudEndColour":
-                        hudEndColour = parser.nextInt();
-                        break;
-
-                    case "replaceLabels":
-                        overrideLabels = parser.nextBoolean();
-                        break;
-
-                    case "worldHealthText":
-                        showTextInWorld = parser.nextBoolean();
-                        break;
-
-                    case "worldTextShadows":
-                        worldShadows = parser.nextBoolean();
-                        break;
-                    
-                    case "maxRenderDistance":
-                        maxRenderDistance = (float)parser.nextDouble();
-                        break;
-
-                    case "barScale":
-                        worldHealthBarScale = (float)parser.nextDouble();
-                        break;
-
-                    case "worldOffsetY":
-                        worldOffsetY = (float)parser.nextDouble();
-                        break;
-
-                    case "worldGradient":
-                        worldGradient = parser.nextBoolean();
-                        break;
-
-                    case "worldStartColour":
-                        worldStartColour = parser.nextInt();
-                        unpackedStartWorld = Vec3d.unpackRgb(worldStartColour).toVector3f();
-                        break;
-
-                    case "worldEndColour":
-                        worldEndColour = parser.nextInt();
-                        unpackedEndWorld = Vec3d.unpackRgb(worldEndColour).toVector3f();
-                        break;
-
-                    case "bossHealth":
-                        bosses = VisibilityType.valueOf(parser.nextString());
-                        break;
-                    
-                    case "bossTarget":
-                        bossesVisibilityOverride = parser.nextBoolean();
-                        break;
-
-                    case "bossHUD":
-                        bossHUD = HUDType.valueOf(parser.nextString());
-                        break;
-                    
-                    case "hostileHealth":
-                        hostile = VisibilityType.valueOf(parser.nextString());
-                        break;
-                    
-                    case "hostileTarget":
-                        hostileVisibilityOverride = parser.nextBoolean();
-                        break;
-                    
-                    case "hostileHUD":
-                        hostileHUD = HUDType.valueOf(parser.nextString());
-                        break;
-                    
-                    case "playerHealth":
-                        players = VisibilityType.valueOf(parser.nextString());
-                        break;
-                    
-                    case "playerTarget":
-                        playersVisibilityOverride = parser.nextBoolean();
-                        break;
-
-                    case "worldTitles":
-                        worldTitles = parser.nextBoolean();
-                        break;
-
-                    case "tintBackground":
-                        tintBackground = parser.nextBoolean();
-                        break;
-
-                    case "useTeamColours":
-                        useTeamColours = parser.nextBoolean();
-                        break;
-
-                    case "playerHUD":
-                        playerHUD = HUDType.valueOf(parser.nextString());
-                        break;
-                    
-                    case "otherHealth":
-                        others = VisibilityType.valueOf(parser.nextString());
-                        break;
-
-                    case "otherTarget":
-                        othersVisibilityOverride = parser.nextBoolean();
-                        break;
-
-                    case "otherHUD":
-                        otherHUD = HUDType.valueOf(parser.nextString());
-                        break;
-
-                    case "hudTitles":
-                        hudTitles = parser.nextBoolean();
-                        break;
-
-                    case "hudStatusEffects":
-                        hudStatuses = parser.nextBoolean();
-                        break;
-
-                    case "damageParticles":
-                        spawnDamageParticles = parser.nextBoolean();
-                        break;
-
-                    case "healingParticles":
-                        spawnHealingParticles = parser.nextBoolean();
-                        break;
-
-                    case "damageColour":
-                        damageColour = parser.nextInt();
-                        unpackedDamage = Vec3d.unpackRgb(damageColour).toVector3f();
-                        break;
-
-                    case "damageAlpha":
-                        damageAlpha = (float)parser.nextDouble();
-                        break;
-
-                    case "healingColour":
-                        healingColour = parser.nextInt();
-                        unpackedHealing = Vec3d.unpackRgb(healingColour).toVector3f();
-                        break;
-
-                    case "healingAlpha":
-                        healingAlpha = (float)parser.nextDouble();
-                        break;
-
-                    case "particleScale":
-                        particleScale = (float)parser.nextDouble();
-                        break;
-
-                    case "particleTextShadow":
-                        particleTextShadow = parser.nextBoolean();
-                        break;
-
-                    case "damageParticleTextColour":
-                        damageParticleTextColour = parser.nextInt();
-                        break;
-
-                    case "healingParticleTextColour":
-                        healingParticleTextColour = parser.nextInt();
-                        break;
-
-                    case "particleType":
-                        particleType = DamageParticleType.valueOf(parser.nextString());
-                        break;
-
-                    case "maxParticleDistance":
-                        maxParticleDistance = (float)parser.nextDouble();
-                        break;
-
-                    case "topLayerTextType":
-                        seeThroughTextType = SeeThroughText.valueOf(parser.nextString());
-                        break;
-
-                    case "compatWorldBar":
-                        compatInWorld = parser.nextBoolean();
-                        break;
-
-                    case "compatHudPaperdoll":
-                        HUDCompat = HUDPortraitCompatMode.valueOf(parser.nextString());
-                        break;
-
-                    case "healthBlacklist":
-                        ArrayList<String> tempBlacklist = new ArrayList<>();
-                        parser.beginArray();
-                        while (parser.hasNext()) {
-                            tempBlacklist.add(parser.nextString());
-                        }
-                        parser.endArray();
-                        blacklist = tempBlacklist;
-                        break;
-
-                    case "hudBlacklist":
-                        ArrayList<String> tempHudBlacklist = new ArrayList<>();
-                        parser.beginArray();
-                        while (parser.hasNext()) {
-                            tempHudBlacklist.add(parser.nextString());
-                        }
-                        parser.endArray();
-                        blacklistHUD = tempHudBlacklist;
-                        break;
-                
-                    default:
-                        ProviHealthClient.LOGGER.warn("Unknown label \"{}\" found in config.", label);
-                        parser.skipValue();
-                        break;
-                }
+            JsonReader jsonReader = JsonReader.file(new File(FILE));
+            if (jsonReader == null) {
+                save();
+                return;
             }
-            parser.close();
+
+            jsonReader.get("hud").map(element -> {
+                if (element instanceof JsonObject jsonObject) return new JsonReader(jsonObject);
+                else return null;
+            }).ifPresent(json -> {
+                json.getInteger("hudDuration").ifPresent(val -> maxHealthBarTicks = val);
+                json.getBoolean("hudIcon").ifPresent(val -> showHudIcon = val);
+                json.getBoolean("hudPortraits").ifPresent(val -> useCustomHudPortraits = val);
+                json.getFloat("hudGlide").ifPresent(val -> hudGlide = val);
+                json.getString("hudPosition").ifPresent(val -> hudPosition = HUDPosition.valueOf(val));
+                json.getInteger("hudOffsetY").ifPresent(val -> hudOffsetPercent = val);
+                json.getBoolean("hudGradient").ifPresent(val -> hudGradient = val);
+                json.getInteger("hudStartColour").ifPresent(val -> hudStartColour = val);
+                json.getInteger("hudEndColour").ifPresent(val -> hudEndColour = val);
+                json.getString("bossHUD").ifPresent(val -> bossHUD = HUDType.valueOf(val));
+                json.getString("hostileHUD").ifPresent(val -> hostileHUD = HUDType.valueOf(val));
+                json.getString("playerHUD").ifPresent(val -> playerHUD = HUDType.valueOf(val));
+                json.getString("otherHUD").ifPresent(val -> otherHUD = HUDType.valueOf(val));
+                json.getBoolean("hudTitles").ifPresent(val -> hudTitles = val);
+                json.getBoolean("hudStatusEffects").ifPresent(val -> hudStatuses = val);
+                json.getArray("hudBlacklist").ifPresent(val -> blacklistHUD = val.asList().stream().map(JsonElement::getAsJsonPrimitive).map(JsonPrimitive::getAsString).toList());
+            });
+
+            jsonReader.get("world").map(element -> {
+                if (element instanceof JsonObject jsonObject) return new JsonReader(jsonObject);
+                else return null;
+            }).ifPresent(json -> {
+                json.getBoolean("replaceLabels").ifPresent(val -> overrideLabels = val);
+                json.getBoolean("worldHealthText").ifPresent(val -> showTextInWorld = val);
+                json.getBoolean("worldTextShadows").ifPresent(val -> worldShadows = val);
+                json.getFloat("maxRenderDistance").ifPresent(val -> maxRenderDistance = val);
+                json.getFloat("barScale").ifPresent(val -> worldHealthBarScale = val);
+                json.getFloat("worldOffsetY").ifPresent(val -> worldOffsetY = val);
+                json.getBoolean("worldGradient").ifPresent(val -> worldGradient = val);
+                json.getInteger("worldStartColour").ifPresent(val -> worldStartColour = val);
+                json.getInteger("worldEndColour").ifPresent(val -> worldEndColour = val);
+                json.getString("bossHealth").ifPresent(val -> bosses = VisibilityType.valueOf(val));
+                json.getBoolean("bossTarget").ifPresent(val -> bossesVisibilityOverride = val);
+                json.getString("hostileHealth").ifPresent(val -> hostile = VisibilityType.valueOf(val));
+                json.getBoolean("hostileTarget").ifPresent(val -> hostileVisibilityOverride = val);
+                json.getString("playerHealth").ifPresent(val -> players = VisibilityType.valueOf(val));
+                json.getBoolean("playerTarget").ifPresent(val -> playersVisibilityOverride = val);
+                json.getString("otherHealth").ifPresent(val -> others = VisibilityType.valueOf(val));
+                json.getBoolean("otherTarget").ifPresent(val -> othersVisibilityOverride = val);
+                json.getBoolean("worldTitles").ifPresent(val -> worldTitles = val);
+                json.getBoolean("tintBackground").ifPresent(val -> tintBackground = val);
+                json.getBoolean("useTeamColours").ifPresent(val -> useTeamColours = val);
+                json.getArray("healthBlacklist").ifPresent(val -> blacklist = val.asList().stream().map(JsonElement::getAsJsonPrimitive).map(JsonPrimitive::getAsString).toList());
+            });
+
+            jsonReader.get("particles").map(element -> {
+                if (element instanceof JsonObject jsonObject) return new JsonReader(jsonObject);
+                else return null;
+            }).ifPresent(json -> {
+                json.getBoolean("damageParticles").ifPresent(val -> spawnDamageParticles = val);
+                json.getBoolean("healingParticles").ifPresent(val -> spawnHealingParticles = val);
+                json.getInteger("damageColour").ifPresent(val -> damageColour = val);
+                json.getFloat("damageAlpha").ifPresent(val -> damageAlpha = val);
+                json.getInteger("healingColour").ifPresent(val -> healingColour = val);
+                json.getFloat("healingAlpha").ifPresent(val -> healingAlpha = val);
+                json.getFloat("particleScale").ifPresent(val -> particleScale = val);
+                json.getBoolean("particleTextShadow").ifPresent(val -> particleTextShadow = val);
+                json.getInteger("damageParticleTextColour").ifPresent(val -> damageParticleTextColour = val);
+                json.getInteger("healingParticleTextColour").ifPresent(val -> healingParticleTextColour = val);
+                json.getString("particleType").ifPresent(val -> particleType = DamageParticleType.valueOf(val));
+                json.getFloat("maxParticleDistance").ifPresent(val -> maxParticleDistance = val);
+            });
+
+            jsonReader.get("compatibility").map(element -> {
+                if (element instanceof JsonObject jsonObject) return new JsonReader(jsonObject);
+                else return null;
+            }).ifPresent(json -> {
+                json.getString("topLayerTextType").ifPresent(val -> seeThroughTextType = SeeThroughText.valueOf(val));
+                json.getBoolean("compatWorldBar").ifPresent(val -> compatInWorld = val);
+                json.getString("compatHudPaperdoll").ifPresent(val -> HUDCompat = HUDPortraitCompatMode.valueOf(val));
+            });
+
+            // Sanitise the config file.
+            save();
         }
         catch (FileNotFoundException e) {
             ProviHealthClient.LOGGER.info("No config found, creating new one.");
             save();
         }
-        catch (IOException e2) {
-            ProviHealthClient.LOGGER.error("Error whilst parsing config: ", e2);
-        }
     }
 
     private static boolean shouldRenderHealthFor (VisibilityType type, LivingEntity livingEntity) {
-        switch (type) {
-            case ALWAYS_HIDE:
-                return false;
-
-            case HIDE_IF_FULL:
-                if (livingEntity.getHealth() < livingEntity.getMaxHealth()) return true;
+        return switch (type) {
+            case ALWAYS_HIDE -> false;
+            case HIDE_IF_FULL -> {
+                if (livingEntity.getHealth() < livingEntity.getMaxHealth()) yield true;
                 else if (livingEntity.hasVehicle()) {
                     Entity vehicle = livingEntity.getVehicle();
                     while (vehicle != null) {
                         if (vehicle instanceof LivingEntity livingVehicle) {
-                            if (livingVehicle.getHealth() < livingVehicle.getMaxHealth()) return true;
+                            if (livingVehicle.getHealth() < livingVehicle.getMaxHealth()) yield true;
                         }
                         vehicle = vehicle.getVehicle();
                     }
                 }
-                return false;
-
-            case ALWAYS_SHOW:
-            default:
-                return true;
-        }
+                yield false;
+            }
+            default -> true;
+        };
     }
 
     public enum BarType {
