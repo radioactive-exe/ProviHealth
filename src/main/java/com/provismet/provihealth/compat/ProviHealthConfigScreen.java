@@ -385,12 +385,14 @@ public class ProviHealthConfigScreen {
             .build()
         );
 
+        /*
         compatibility.addEntry(entryBuilder.startBooleanToggle(Text.translatable("entry.provihealth.compatWorld"), Options.compatInWorld)
             .setDefaultValue(false)
             .setTooltip(Text.translatable("tooltip.provihealth.compatWorld"))
             .setSaveConsumer(newValue -> Options.compatInWorld = newValue)
             .build()
         );
+         */
 
         compatibility.addEntry(entryBuilder.startEnumSelector(Text.translatable("entry.provihealth.compatHud"), HUDPortraitCompatMode.class, Options.HUDCompat)
             .setDefaultValue(HUDPortraitCompatMode.STANDARD)
