@@ -2,6 +2,7 @@ package com.provismet.provihealth.world;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.PolygonMode;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.provismet.provihealth.ProviHealthClient;
 import net.minecraft.client.gl.RenderPipelines;
@@ -22,6 +23,7 @@ public abstract class HealthBarRendering {
         .withShaderDefine("NO_CARDINAL_LIGHTING")
         .withShaderDefine("APPLY_TEXTURE_MATRIX")
         .withUniform("TextureMat", UniformType.MATRIX4X4)
+        .withPolygonMode(PolygonMode.FILL)
         .withCull(false)
         .buildSnippet();
 
@@ -35,6 +37,8 @@ public abstract class HealthBarRendering {
     public static final RenderPipeline HEALTH_BAR_COMPAT_PIPELINE = RenderPipelines.register(
         RenderPipeline.builder(HEALTH_BAR_SNIPPET)
             .withLocation(ProviHealthClient.identifier("pipeline/healthbar_compat"))
+            .withVertexShader("core/position_tex")
+            .withFragmentShader("core/position_tex")
             .withVertexFormat(VertexFormats.POSITION_TEXTURE, VertexFormat.DrawMode.QUADS)
             .build()
     );
