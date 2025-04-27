@@ -1,35 +1,27 @@
 package com.provismet.provihealth.world;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
-import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
-
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.SeeThroughText;
-
+import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.List;
 
@@ -74,8 +66,6 @@ public class EntityHealthBar {
             renderBar(mixinState, mountModel, vertexConsumer, FOREGROUND_BAR_INDEX, mixinState.provi_Health$getMountHealth().getLerped() / mixinState.provi_Health$getMountHealth().getMax(), true); // Health
             matrices.pop();
         }
-
-        //layer.draw(vertexConsumer.end());
 
         // Health Text
         if (Options.showTextInWorld) {
@@ -140,8 +130,6 @@ public class EntityHealthBar {
             matrices.pop();
         }
 
-        GlStateManager._disableBlend();
-        GlStateManager._disableDepthTest();
         matrices.pop();
     }
 
