@@ -122,15 +122,7 @@ public class Options {
         }
     }
 
-    public static HUDType getHUDFor (LivingEntity livingEntity) {
-        if (Options.isBlacklisted(livingEntity, BarType.HUD)) return HUDType.NONE;
-        else if (livingEntity.getType().isIn(ConventionalEntityTypeTags.BOSSES)) return bossHUD;
-        else if (livingEntity instanceof HostileEntity) return hostileHUD;
-        else if (livingEntity instanceof PlayerEntity) return playerHUD;
-        else return otherHUD;
-    }
-
-    public static Vector3f getBarColour (float percentage, Vector3f start, Vector3f end, boolean shouldGradient) {
+    public static Vector3f lerpBarColour (float percentage, Vector3f start, Vector3f end, boolean shouldGradient) {
         if (shouldGradient) {
             Vector3f colour = new Vector3f();
             colour.x = MathHelper.lerp(percentage, end.x, start.x);

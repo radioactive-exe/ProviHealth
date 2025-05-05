@@ -6,7 +6,7 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import com.provismet.provihealth.hud.BorderRegistry;
+import com.provismet.provihealth.hud.ElementRegistry;
 
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.Item;
@@ -41,7 +41,7 @@ public interface ProviHealthApi {
      * @return Whether or not the registry succeeded. This is false if a higher priority icon already exists.
      */
     public default boolean registerIcon (TagKey<EntityType<?>> tag, @NotNull Item item, int priority) {
-        return BorderRegistry.registerItem(tag, item.getDefaultStack(), priority);
+        return ElementRegistry.registerItem(tag, item.getDefaultStack(), priority);
     }
 
     /**
@@ -70,7 +70,7 @@ public interface ProviHealthApi {
      * @return Whether or not the registry succeeded. This is false if a higher priority icon already exists.
      */
     public default boolean registerIcon (EntityType<?> type, @NotNull Item item, int priority) {
-        return BorderRegistry.registerItem(type, item.getDefaultStack(), priority);
+        return ElementRegistry.registerItem(type, item.getDefaultStack(), priority);
     }
 
 
@@ -104,7 +104,7 @@ public interface ProviHealthApi {
      * @return Whether or not the registry succeeded. This is false if a higher priority icon already exists.
      */
     public default boolean registerIconStack (EntityType<?> type, @Nullable ItemStack item, int priority) {
-        return BorderRegistry.registerItem(type, item, priority);
+        return ElementRegistry.registerItem(type, item, priority);
     }
 
     /**
@@ -137,7 +137,7 @@ public interface ProviHealthApi {
      * @return Whether or not the registry succeeded. This is false if a higher priority icon already exists.
      */
     public default boolean registerIconStack (TagKey<EntityType<?>> type, @Nullable ItemStack item, int priority) {
-        return BorderRegistry.registerItem(type, item, priority);
+        return ElementRegistry.registerItem(type, item, priority);
     }
 
     /**
@@ -172,7 +172,7 @@ public interface ProviHealthApi {
      * @return Whether or not the registry succeeded. This is false if a higher priority portrait already exists.
      */
     public default boolean registerPortrait (TagKey<EntityType<?>> entityGroup, @Nullable Identifier resource, int priority) {
-        return BorderRegistry.registerBorder(entityGroup, resource, priority);
+        return ElementRegistry.registerBorder(entityGroup, resource, priority);
     }
 
     /**
@@ -209,7 +209,7 @@ public interface ProviHealthApi {
      * @return Whether or not the registry succeeded. This is false if a higher priority portrait already exists.
      */
     public default boolean registerPortrait (EntityType<?> type, @Nullable Identifier resource, int priority) {
-        return BorderRegistry.registerBorder(type, resource, priority);
+        return ElementRegistry.registerBorder(type, resource, priority);
     }
 
     /**
@@ -222,7 +222,7 @@ public interface ProviHealthApi {
      * @param order Determines the order of this line of text. Higher numbers appear at the top.
      */
     public default void registerTitle (TitleGenerator titleLambda, int order) {
-        BorderRegistry.registerTitle(titleLambda, order);
+        ElementRegistry.registerTitle(titleLambda, order);
     }
 
     @FunctionalInterface

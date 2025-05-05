@@ -189,7 +189,7 @@ public class EntityHealthBar {
                 colour = Vec3d.unpackRgb(teamColour).toVector3f();
             }
             else {
-                colour = Options.getBarColour(healthPercentage, Options.unpackedStartWorld, Options.unpackedEndWorld, Options.worldGradient);
+                colour = Options.lerpBarColour(healthPercentage, Options.unpackedStartWorld, Options.unpackedEndWorld, Options.worldGradient);
             }
 
             vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).color(colour.x, colour.y, colour.z, 1f); // Top-Left
