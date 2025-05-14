@@ -29,7 +29,6 @@ public class EntityHealthBar {
     public static boolean enabled = true;
 
     private static final Identifier BARS = ProviHealthClient.identifier("textures/gui/healthbars/in_world.png");
-    private static final Identifier COMPAT_BARS = ProviHealthClient.identifier("textures/gui/healthbars/in_world_coloured.png");
     private static final float TEXTURE_SIZE = 64;
     private static final int LIGHT = LightmapTextureManager.pack(15, 15);
     private static final int BACKGROUND_BAR_INDEX = 1;
@@ -45,14 +44,7 @@ public class EntityHealthBar {
         matrices.translate(0f, (mixinState.provi_Health$shouldRenderLabel() && !Options.overrideLabels && !(state.invisible || (state instanceof LivingEntityRenderState livingState && livingState.invisibleToPlayer)) ? 0.02f + 0.3f / Options.worldHealthBarScale : 0f), 0f);
         matrices.multiply(rotation); // This is the problem.
 
-        RenderLayer layer;
-        if (Options.compatInWorld) {
-            layer = HealthBarRendering.getHealthBarCompatibilityLayer(COMPAT_BARS);
-        }
-        else {
-            layer = HealthBarRendering.getHealthBarLayer(BARS);
-        }
-        layer = RenderLayer.getText(BARS); // WHY DOES THIS FIX THE IRIS ISSUE?!
+        RenderLayer layer = RenderLayer.getText(BARS); // WHY DOES THIS FIX THE IRIS ISSUE?!
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
 
         Matrix4f model = matrices.peek().getPositionMatrix();
@@ -175,29 +167,21 @@ public class EntityHealthBar {
 
         final float Z = (float)index * -0.0001f;
 
-        if (Options.compatInWorld) {
-            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V); // Bottom-Right
-            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V); // Bottom-Left
-            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V); // Top-Left
-            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V); // Top-Right
+        Vector3f colour;
+        if (!Options.tintBackground && index == 1) {
+            colour = Options.WHITE;
+        }
+        else if (Options.useTeamColours && state.provi_Health$getTeamColour() instanceof Integer teamColour) {
+            colour = Vec3d.unpackRgb(teamColour).toVector3f();
         }
         else {
-            Vector3f colour;
-            if (!Options.tintBackground && index == 1) {
-                colour = Options.WHITE;
-            }
-            else if (Options.useTeamColours && state.provi_Health$getTeamColour() instanceof Integer teamColour) {
-                colour = Vec3d.unpackRgb(teamColour).toVector3f();
-            }
-            else {
-                colour = Options.lerpBarColour(healthPercentage, Options.unpackedStartWorld, Options.unpackedEndWorld, Options.worldGradient);
-            }
-
-            int maxLight = 0xF000F0;
-            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
-            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Right
-            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
-            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
+            colour = Options.lerpBarColour(healthPercentage, Options.unpackedStartWorld, Options.unpackedEndWorld, Options.worldGradient);
         }
+
+        int maxLight = 0xF000F0;
+        vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
+        vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Right
+        vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
+        vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
     }
 }

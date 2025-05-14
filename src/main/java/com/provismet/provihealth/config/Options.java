@@ -95,8 +95,6 @@ public class Options {
     public static float healingAlpha = 1f;
 
     public static SeeThroughText seeThroughTextType = SeeThroughText.STANDARD;
-    public static boolean compatInWorld = false;
-    public static boolean compatInHUD = false;
     public static HUDPortraitCompatMode HUDCompat = HUDPortraitCompatMode.STANDARD;
 
     public static boolean shouldRenderHealthFor (LivingEntity livingEntity) {
@@ -200,7 +198,6 @@ public class Options {
             )
             .append("compatibility", new JsonBuilder()
                 .append("topLayerTextType", seeThroughTextType.name())
-                .append("compatWorldBar", compatInWorld)
                 .append("compatHudPaperdoll", HUDCompat.name())
             )
             .toString();
@@ -293,7 +290,6 @@ public class Options {
                 else return null;
             }).ifPresent(json -> {
                 json.getString("topLayerTextType").ifPresent(val -> seeThroughTextType = SeeThroughText.valueOf(val));
-                json.getBoolean("compatWorldBar").ifPresent(val -> compatInWorld = val);
                 json.getString("compatHudPaperdoll").ifPresent(val -> HUDCompat = HUDPortraitCompatMode.valueOf(val));
             });
 
