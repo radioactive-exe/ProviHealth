@@ -45,14 +45,7 @@ public class EntityHealthBar {
         matrices.translate(0f, (mixinState.provi_Health$shouldRenderLabel() && !Options.overrideLabels && !(state.invisible || (state instanceof LivingEntityRenderState livingState && livingState.invisibleToPlayer)) ? 0.02f + 0.3f / Options.worldHealthBarScale : 0f), 0f);
         matrices.multiply(rotation); // This is the problem.
 
-        RenderLayer layer;
-        if (Options.compatInWorld) {
-            layer = HealthBarRendering.getHealthBarCompatibilityLayer(COMPAT_BARS);
-        }
-        else {
-            layer = HealthBarRendering.getHealthBarLayer(BARS);
-        }
-        layer = RenderLayer.getText(BARS); // WHY DOES THIS FIX THE IRIS ISSUE?!
+        RenderLayer layer = RenderLayer.getText(BARS); // WHY DOES THIS FIX THE IRIS ISSUE?!
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
 
         Matrix4f model = matrices.peek().getPositionMatrix();

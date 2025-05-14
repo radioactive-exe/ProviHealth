@@ -7,8 +7,7 @@
     "client": [
         "EntityRendererMixin",
         "EntityRenderStateMixin",
-        "LivingEntityMixin",
-        "ShaderLoaderMixin"
+        "LivingEntityMixin"
     ],
     "injectors": {
         "defaultRequire": 1
