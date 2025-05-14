@@ -52,6 +52,7 @@ public class EntityHealthBar {
         else {
             layer = HealthBarRendering.getHealthBarLayer(BARS);
         }
+        layer = RenderLayer.getText(BARS); // WHY DOES THIS FIX THE IRIS ISSUE?!
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
 
         Matrix4f model = matrices.peek().getPositionMatrix();
@@ -192,10 +193,11 @@ public class EntityHealthBar {
                 colour = Options.lerpBarColour(healthPercentage, Options.unpackedStartWorld, Options.unpackedEndWorld, Options.worldGradient);
             }
 
-            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).color(colour.x, colour.y, colour.z, 1f); // Top-Left
-            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).color(colour.x, colour.y, colour.z, 1f); // Top-Right
-            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
-            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
+            int maxLight = 0xF000F0;
+            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
+            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Right
+            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
+            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
         }
     }
 }
