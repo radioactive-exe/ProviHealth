@@ -56,20 +56,29 @@ public class Options {
     public static boolean useCustomHudPortraits = true;
     public static int hudOffsetPercent = 0;
     public static HUDPosition hudPosition = HUDPosition.LEFT;
-    public static int hudStartColour = 0x00C100;
-    public static int hudEndColour = 0xFF0000;
-    public static Vector3f unpackedStartHud = Vec3d.unpackRgb(hudStartColour).toVector3f();
+    public static int hudDefaultStartColour = 0x00C100; // Renamed to default for clarity with other types. Passive mobs use default
+    public static int hudNeutralStartColour = 0xF2D00C;
+    public static int hudHostileStartColour = 0xFF0000;
+    public static int hudEndColour = 0xBB0000; // Darkened end colour slightly to account for hostile mob bars being dynamic, albeit mildly
+    public static Vector3f unpackedDefaultStartHud = Vec3d.unpackRgb(hudDefaultStartColour).toVector3f();
+    public static Vector3f unpackedNeutralStartHud = Vec3d.unpackRgb(hudNeutralStartColour).toVector3f();
+    public static Vector3f unpackedHostileStartHud = Vec3d.unpackRgb(hudHostileStartColour).toVector3f();
     public static Vector3f unpackedEndHud = Vec3d.unpackRgb(hudEndColour).toVector3f();
     public static boolean hudGradient = false;
     public static boolean hudTitles = true;
     public static boolean hudStatuses = true;
+    public static boolean useHudAggressionColours = true;
 
     public static boolean showTextInWorld = true;
     public static float maxRenderDistance = 24f;
     public static float worldHealthBarScale = 1.5f;
-    public static int worldStartColour = 0x00C100;
-    public static int worldEndColour = 0xFF0000;
-    public static Vector3f unpackedStartWorld = Vec3d.unpackRgb(worldStartColour).toVector3f();
+    public static int worldDefaultStartColour = 0x00C100; // Renamed to default for clarity with other types. Passive mobs use default
+    public static int worldNeutralStartColour = 0xF2D00C;
+    public static int worldHostileStartColour = 0xFF0000;
+    public static int worldEndColour = 0xBB0000; // Darkened end colour slightly to account for hostile mob bars being dynamic, albeit mildly
+    public static Vector3f unpackedDefaultStartWorld = Vec3d.unpackRgb(worldDefaultStartColour).toVector3f();
+    public static Vector3f unpackedNeutralStartWorld = Vec3d.unpackRgb(worldNeutralStartColour).toVector3f();
+    public static Vector3f unpackedHostileStartWorld = Vec3d.unpackRgb(worldHostileStartColour).toVector3f();
     public static Vector3f unpackedEndWorld = Vec3d.unpackRgb(worldEndColour).toVector3f();
     public static boolean worldGradient = false;
     public static boolean overrideLabels = false;
@@ -78,6 +87,7 @@ public class Options {
     public static boolean worldTitles = true;
     public static boolean tintBackground = false;
     public static boolean useTeamColours = false;
+    public static boolean useWorldAggressionColours = true;
 
     public static boolean spawnDamageParticles = true;
     public static boolean spawnHealingParticles = false;
@@ -151,7 +161,10 @@ public class Options {
                 .append("hudPosition", hudPosition.name())
                 .append("hudOffsetY", hudOffsetPercent)
                 .append("hudGradient", hudGradient)
-                .append("hudStartColour", hudStartColour)
+                .append("hudDefaultStartColour", hudDefaultStartColour)
+                .append("hudNeutralStartColour", hudNeutralStartColour)
+                .append("hudHostileStartColour", hudHostileStartColour)
+                .append("useHudAggressionColours", useHudAggressionColours)
                 .append("hudEndColour", hudEndColour)
                 .append("bossHUD", bossHUD.name())
                 .append("hostileHUD", hostileHUD.name())
@@ -169,7 +182,9 @@ public class Options {
                 .append("barScale", worldHealthBarScale)
                 .append("worldOffsetY", worldOffsetY)
                 .append("worldGradient", worldGradient)
-                .append("worldStartColour", worldStartColour)
+                .append("worldDefaultStartColour", worldDefaultStartColour)
+                .append("worldNeutralStartColour", worldNeutralStartColour)
+                .append("worldHostileStartColour", worldHostileStartColour)
                 .append("worldEndColour", worldEndColour)
                 .append("bossHealth", bosses.name())
                 .append("bossTarget", bossesVisibilityOverride)
@@ -182,6 +197,7 @@ public class Options {
                 .append("worldTitles", worldTitles)
                 .append("tintBackground", tintBackground)
                 .append("useTeamColours", useTeamColours)
+                .append("useWorldAggressionColours", useWorldAggressionColours)
                 .appendArray("healthBlacklist", blacklist)
             )
             .append("particles", new JsonBuilder()
@@ -232,7 +248,10 @@ public class Options {
                 json.getString("hudPosition").ifPresent(val -> hudPosition = HUDPosition.valueOf(val));
                 json.getInteger("hudOffsetY").ifPresent(val -> hudOffsetPercent = val);
                 json.getBoolean("hudGradient").ifPresent(val -> hudGradient = val);
-                json.getInteger("hudStartColour").ifPresent(val -> hudStartColour = val);
+                json.getBoolean("useHudAggressionColours").ifPresent(val -> useHudAggressionColours = val);
+                json.getInteger("hudDefaultStartColour").ifPresent(val -> hudDefaultStartColour = val);
+                json.getInteger("hudNeutralStartColour").ifPresent(val -> hudNeutralStartColour = val);
+                json.getInteger("hudHostileStartColour").ifPresent(val -> hudHostileStartColour = val);
                 json.getInteger("hudEndColour").ifPresent(val -> hudEndColour = val);
                 json.getString("bossHUD").ifPresent(val -> bossHUD = HUDType.valueOf(val));
                 json.getString("hostileHUD").ifPresent(val -> hostileHUD = HUDType.valueOf(val));
@@ -254,7 +273,10 @@ public class Options {
                 json.getFloat("barScale").ifPresent(val -> worldHealthBarScale = val);
                 json.getFloat("worldOffsetY").ifPresent(val -> worldOffsetY = val);
                 json.getBoolean("worldGradient").ifPresent(val -> worldGradient = val);
-                json.getInteger("worldStartColour").ifPresent(val -> worldStartColour = val);
+                json.getBoolean("useWorldAggressionColours").ifPresent(val -> useWorldAggressionColours = val);
+                json.getInteger("worldDefaultStartColour").ifPresent(val -> worldDefaultStartColour = val);
+                json.getInteger("worldNeutralStartColour").ifPresent(val -> worldNeutralStartColour = val);
+                json.getInteger("worldHostileStartColour").ifPresent(val -> worldHostileStartColour = val);
                 json.getInteger("worldEndColour").ifPresent(val -> worldEndColour = val);
                 json.getString("bossHealth").ifPresent(val -> bosses = VisibilityType.valueOf(val));
                 json.getBoolean("bossTarget").ifPresent(val -> bossesVisibilityOverride = val);

@@ -48,6 +48,7 @@ public abstract class LivingEntityMixin extends Entity implements IMixinLivingEn
     public abstract float getMaxHealth();
 
     @Shadow @Final private static TrackedData<List<ParticleEffect>> POTION_SWIRLS;
+    @Shadow protected int lastAttackTimer;
 
     @Override
     public HealthContainer provi_Health$getHealthContainer () {
@@ -72,6 +73,16 @@ public abstract class LivingEntityMixin extends Entity implements IMixinLivingEn
             .sorted(Comparator.comparing(effect -> effect.value().getName().getString()))
             .sorted(Comparator.comparingInt(effect -> effect.value().getCategory().ordinal()))
             .toList();
+    }
+
+    @Override
+    public boolean provi_Health$isAngryAtPlayer () {
+        return this.lastAttackTimer > 0;
+    }
+
+    @Override
+    public int provi_Health$getAnger () {
+        return this.lastAttackTimer;
     }
 
     @Inject(method="tick", at=@At("TAIL"))

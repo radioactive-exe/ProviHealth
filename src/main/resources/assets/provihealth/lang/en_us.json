@@ -40,8 +40,10 @@
     "entry.provihealth.maxParticleDistance": "Particle Render Distance",
     "entry.provihealth.hudOffsetX": "HUD Position",
     "entry.provihealth.gradient": "Dynamic Bar Color",
-    "entry.provihealth.barStartColour": "Full Health Colour",
-    "entry.provihealth.barEndColour": "Low Health Colour",
+    "entry.provihealth.barDefaultStartColour": "Full Default/Passive Mob Health Color",
+    "entry.provihealth.barNeutralStartColour": "Full Neutral Mob Health Color",
+    "entry.provihealth.barHostileStartColour": "Full Hostile Mob Health Color",
+    "entry.provihealth.barEndColour": "Low Health Color",
     "entry.provihealth.overrideLabels": "Replace Nameplates",
     "entry.provihealth.worldShadows": "Text Shadow",
     "entry.provihealth.compatText": "In-World Health Bar SeeThrough Text Mode",
@@ -54,6 +56,7 @@
     "entry.provihealth.hudStatuses": "Show Status Effects",
     "entry.provihealth.tintBackground": "Tint Background",
     "entry.provihealth.teamColours": "Use Team Colors",
+    "entry.provihealth.aggressionColours": "Use Entity Aggression Colors",
 
     "enum.provihealth.full": "Full",
     "enum.provihealth.portrait_only": "Portrait Only",
@@ -92,6 +95,7 @@
     "tooltip.provihealth.worldTitles": "Allows other mods to show text above the in-world health bars.",
     "tooltip.provihealth.tintBackground": "Applies the bar color to the background as well.",
     "tooltip.provihealth.teamColours": "Matches health bar color to the entity's team if applicable.\nTeam colors will override colors from other settings.",
+    "tooltip.provihealth.aggressionColours": "Matches health bar color to the entity aggression type/level.\nAngered and Hostile mobs will use the Hostile aggression colors.\nNon-angered and Untamed Neutral/Angerable mobs will use the Neutral aggression colors\nPassive mobs will use the default color.\nIf turned off, all mobs use the default color.",
 
     "entity.provihealth.unknownPlayer": "[Invisible Player]",
 
