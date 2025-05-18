@@ -23,20 +23,25 @@ import net.minecraft.entity.passive.TameableEntity;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.SeeThroughText;
-
+import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
-import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.render.entity.state.EntityRenderState;
+import net.minecraft.client.render.entity.state.LivingEntityRenderState;
+import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.List;
 
@@ -60,13 +65,7 @@ public class EntityHealthBar {
         matrices.translate(0f, (mixinState.provi_Health$shouldRenderLabel() && !Options.overrideLabels && !(state.invisible || (state instanceof LivingEntityRenderState livingState && livingState.invisibleToPlayer)) ? 0.02f + 0.3f / Options.worldHealthBarScale : 0f), 0f);
         matrices.multiply(rotation); // This is the problem.
 
-        RenderLayer layer;
-        if (Options.compatInWorld) {
-            layer = HealthBarRendering.getHealthBarCompatibilityLayer(COMPAT_BARS);
-        }
-        else {
-            layer = HealthBarRendering.getHealthBarLayer(BARS);
-        }
+        RenderLayer layer = RenderLayer.getText(BARS); // WHY DOES THIS FIX THE IRIS ISSUE?!
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
 
         Matrix4f model = matrices.peek().getPositionMatrix();
@@ -81,8 +80,6 @@ public class EntityHealthBar {
             renderBar(mixinState, mountModel, vertexConsumer, FOREGROUND_BAR_INDEX, mixinState.provi_Health$getMountHealth().getLerped() / mixinState.provi_Health$getMountHealth().getMax(), true); // Health
             matrices.pop();
         }
-
-        //layer.draw(vertexConsumer.end());
 
         // Health Text
         if (Options.showTextInWorld) {
@@ -147,8 +144,6 @@ public class EntityHealthBar {
             matrices.pop();
         }
 
-        GlStateManager._disableBlend();
-        GlStateManager._disableDepthTest();
         matrices.pop();
     }
 
@@ -249,13 +244,15 @@ public class EntityHealthBar {
 
             // ~ Passive and Default Aggression Level (all passive mobs and modded mobs that do not extend vanilla classes), or all mobs if the aggression colour option is off
             else {
-                colour = Options.getBarColour(healthPercentage, Options.unpackedDefaultStartWorld, Options.unpackedEndWorld, Options.worldGradient);
+                colour = Options.lerpBarColour(healthPercentage, Options.unpackedDefaultStartWorld, Options.unpackedEndWorld, Options.worldGradient);
+
             }
 
-            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).color(colour.x, colour.y, colour.z, 1f); // Top-Left
-            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).color(colour.x, colour.y, colour.z, 1f); // Top-Right
-            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
-            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
+            int maxLight = 0xF000F0;
+            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
+            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Right
+            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
+            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
         }
     }
 }

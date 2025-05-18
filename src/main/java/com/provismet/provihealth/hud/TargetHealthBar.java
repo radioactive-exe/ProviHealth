@@ -1,5 +1,6 @@
 package com.provismet.provihealth.hud;
 
+import com.provismet.provihealth.config.resources.EntityOptions;
 import com.provismet.provihealth.interfaces.IMixinLivingEntity;
 import com.provismet.provihealth.util.HealthCalculator;
 import com.provismet.provihealth.util.HealthContainer;
@@ -14,13 +15,13 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.StatusEffectSpriteManager;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.HUDPortraitCompatMode;
@@ -50,7 +51,6 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
 
     public static boolean disabledLabels = false;
 
-    private static final Identifier BARS = ProviHealthClient.identifier("textures/gui/healthbars/bars.png");
     private static final Identifier COMPAT_BARS = ProviHealthClient.identifier("textures/gui/healthbars/bars_coloured.png");
     private static final Identifier HEART = ProviHealthClient.identifier("textures/gui/healthbars/icons/heart.png");
     private static final Identifier MOUNT_HEART = ProviHealthClient.identifier("textures/gui/healthbars/icons/mount_heart.png");
@@ -107,192 +107,194 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
             this.healthBarDuration = Options.maxHealthBarTicks;
         }
 
-        if (this.healthBarDuration > 0f) {
-            if (this.target == null) {
-                this.reset();
-                return;
+        if (this.healthBarDuration <= 0f) return;
+        if (this.target == null) {
+            this.reset();
+            return;
+        }
+
+        this.adjustForScreenSize();
+        EntityOptions entityOptions = ElementRegistry.getEntityOptions(this.target);
+        HUDType hudType = entityOptions.getHudType(this.target);
+
+        float healthPercent = MathHelper.clamp(this.target.getHealth() / this.target.getMaxHealth(), 0f, 1f);
+
+        HealthContainer mountHealth = HealthCalculator.getRecursiveMountHealth(target, Options.BarType.HUD);
+        float vehicleHealthPercent = mountHealth != null ? mountHealth.getPercentage() : 0f;
+
+        int healthWidth = Math.round(BAR_WIDTH * healthPercent);
+        int vehicleHealthWidth = Math.round(MOUNT_BAR_WIDTH * vehicleHealthPercent);
+
+        if (isNewTarget) {
+            this.currentHealthWidth = healthWidth;
+            this.currentVehicleHealthWidth = vehicleHealthWidth;
+        }
+
+        final int nameWidth = MinecraftClient.getInstance().textRenderer.getWidth(this.getName(this.target));
+        if (hudType == HUDType.FULL) {
+            // Render bars
+            Identifier healthbarTexture = entityOptions.getHealthBar(this.target);
+            this.renderBar(drawContext, healthbarTexture, BAR_WIDTH, 1); // Empty space
+            this.renderBar(drawContext, healthbarTexture, glideHealth(healthWidth, tickDelta * Options.hudGlide), 0); // Health
+            if (mountHealth != null) {
+                this.renderMountBar(drawContext, healthbarTexture, MOUNT_BAR_WIDTH, 1); // Empty space
+                this.renderMountBar(drawContext, healthbarTexture, glideVehicleHealth(vehicleHealthWidth, tickDelta * Options.hudGlide), 0); // Health
             }
 
-            this.adjustForScreenSize();
-            HUDType hudType = Options.getHUDFor(this.target);
-
-            float healthPercent = MathHelper.clamp(this.target.getHealth() / this.target.getMaxHealth(), 0f, 1f);
-
-            HealthContainer mountHealth = HealthCalculator.getRecursiveMountHealth(target, Options.BarType.HUD);
-            float vehicleHealthPercent = mountHealth != null ? mountHealth.getPercentage() : 0f;
-
-            int healthWidth = Math.round(BAR_WIDTH * healthPercent);
-            int vehicleHealthWidth = Math.round(MOUNT_BAR_WIDTH * vehicleHealthPercent);
-
-            if (isNewTarget) {
-                this.currentHealthWidth = healthWidth;
-                this.currentVehicleHealthWidth = vehicleHealthWidth;
+            int infoLeftX = LEFT_TEXT_X;
+            ItemStack icon = entityOptions.getIcon(this.target);
+            if (Options.hudPosition == HUDPosition.LEFT) {
+                // Render entity group icon
+                int expectedNameX = LEFT_TEXT_X + nameWidth + 2; // Starting point + width + 2 pixels of free space.
+                if (icon != null && Options.showHudIcon) drawContext.drawItem(icon, Math.max(BAR_X + BAR_WIDTH - 16, expectedNameX), BAR_Y - 16);
+            }
+            else {
+                int expectedNameX = OFFSET_X - 18 - nameWidth; // Leftmost pixel of name, then left by 2 pixels, then left by 16 to make space for the icon.
+                if (icon != null && Options.showHudIcon) drawContext.drawItem(icon, Math.min(BAR_X, expectedNameX), BAR_Y - 16);
+                infoLeftX = BAR_X + 3;
             }
 
-            final int nameWidth = MinecraftClient.getInstance().textRenderer.getWidth(this.getName(this.target));
-            if (hudType == HUDType.FULL) {
-                // Render bars
-                this.renderBar(drawContext, BAR_WIDTH, 1); // Empty space
-                this.renderBar(drawContext, glideHealth(healthWidth, tickDelta * Options.hudGlide), 0); // Health
-                if (mountHealth != null) {
-                    this.renderMountBar(drawContext, MOUNT_BAR_WIDTH, 1); // Empty space
-                    this.renderMountBar(drawContext, glideVehicleHealth(vehicleHealthWidth, tickDelta * Options.hudGlide), 0); // Health
+            // Render health value and heart icons
+            int offsetFromMountBar = (mountHealth != null ? MOUNT_BAR_HEIGHT : 0);
+            int healthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, String.format("%d/%d", Math.round(this.target.getHealth()), Math.round(this.target.getMaxHealth())), infoLeftX, TEXT_BASE_Y + 1 + offsetFromMountBar, 0xFFFFFF, true); // Health Value
+            drawContext.drawTexture(RenderLayer::getGuiTextured, HEART, healthX, TEXT_BASE_Y + offsetFromMountBar, 0f, 0f, 9, 9, 9, 9, 9, 9);
+
+            // Render armour icon if necessary
+            int armourX = MinecraftClient.getInstance().textRenderer.getWidth(String.format("%d/%d", Math.round(this.target.getMaxHealth()), Math.round(this.target.getMaxHealth()))) + infoLeftX + 18;
+            if (this.target.getArmor() > 0) {
+                armourX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, String.format("%d", this.target.getArmor()), armourX, TEXT_BASE_Y + 1 + offsetFromMountBar, 0xFFFFFF, true);
+                drawContext.drawTexture(RenderLayer::getGuiTextured, ARMOUR, armourX, TEXT_BASE_Y + offsetFromMountBar, 0f, 0f, 9, 9, 9, 9, 9, 9);
+            }
+
+            if (mountHealth != null) {
+                String mountHealthString = String.format("%d/%d", Math.round(mountHealth.getCurrent()), Math.round(mountHealth.getMax()));
+                int mountHealthWidth = MinecraftClient.getInstance().textRenderer.getWidth(mountHealthString) + 9;
+                int expectedLeftPixel = BAR_X + BAR_WIDTH - mountHealthWidth - 3;
+
+                if (expectedLeftPixel < armourX) expectedLeftPixel = armourX + 10;
+
+                int mountHealthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, mountHealthString, expectedLeftPixel, TEXT_BASE_Y + 1 + MOUNT_BAR_HEIGHT, 0xFFFFFF, true);
+                drawContext.drawTexture(RenderLayer::getGuiTextured, MOUNT_HEART, mountHealthX, TEXT_BASE_Y + MOUNT_BAR_HEIGHT, 0f, 0f, 9, 9, 9, 9, 9, 9);
+            }
+
+            if (Options.hudStatuses) {
+                List<RegistryEntry<StatusEffect>> effects = ((IMixinLivingEntity)this.target).provi_Health$getClientSideStatusEffects();
+
+                if (!effects.isEmpty()) {
+                    StatusEffectSpriteManager statusEffectSpriteManager = MinecraftClient.getInstance().getStatusEffectSpriteManager();
+                    int effectXOffset = 0;
+                    for (RegistryEntry<StatusEffect> effect : effects) {
+                        Sprite effectSprite = statusEffectSpriteManager.getSprite(effect);
+                        drawContext.drawSpriteStretched(RenderLayer::getGuiTextured, effectSprite, EFFECT_X + effectXOffset, EFFECT_BASE_Y + offsetFromMountBar, 16, 16);
+                        effectXOffset += EFFECT_X_OFFSET;
+                    }
                 }
+            }
 
-                int infoLeftX = LEFT_TEXT_X;
+            // Render titles on HUD
+            if (Options.hudTitles) {
+                List<Text> titles = ElementRegistry.getTitle(this.target, false, true).reversed();
+
+                int titleX = 5;
+                int titleY = OFFSET_Y + FRAME_LENGTH + 5;
+
                 if (Options.hudPosition == HUDPosition.LEFT) {
-                    // Render entity group icon
-                    int expectedNameX = LEFT_TEXT_X + nameWidth + 2; // Starting point + width + 2 pixels of free space.
-                    if (BorderRegistry.getItem(this.target) != null && Options.showHudIcon) drawContext.drawItem(BorderRegistry.getItem(this.target), Math.max(BAR_X + BAR_WIDTH - 16, expectedNameX), BAR_Y - 16);
+                    for (Text title : titles) {
+                        drawContext.drawText(MinecraftClient.getInstance().textRenderer, title, titleX, titleY, 0xFFFFFF, true);
+                        titleY += 10;
+                    }
                 }
                 else {
-                    int expectedNameX = OFFSET_X - 18 - nameWidth; // Leftmost pixel of name, then left by 2 pixels, then left by 16 to make space for the icon.
-                    if (BorderRegistry.getItem(this.target) != null && Options.showHudIcon) drawContext.drawItem(BorderRegistry.getItem(this.target), Math.min(BAR_X, expectedNameX), BAR_Y - 16);
-                    infoLeftX = BAR_X + 3;
-                }
-
-                // Render health value and heart icons
-                int offsetFromMountBar = (mountHealth != null ? MOUNT_BAR_HEIGHT : 0);
-                int healthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, String.format("%d/%d", Math.round(this.target.getHealth()), Math.round(this.target.getMaxHealth())), infoLeftX, TEXT_BASE_Y + 1 + offsetFromMountBar, 0xFFFFFF, true); // Health Value
-                drawContext.drawTexture(RenderLayer::getGuiTextured, HEART, healthX, TEXT_BASE_Y + offsetFromMountBar, 0f, 0f, 9, 9, 9, 9, 9, 9);
-
-                // Render armour icon if necessary
-                int armourX = MinecraftClient.getInstance().textRenderer.getWidth(String.format("%d/%d", Math.round(this.target.getMaxHealth()), Math.round(this.target.getMaxHealth()))) + infoLeftX + 18;
-                if (this.target.getArmor() > 0) {
-                    armourX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, String.format("%d", this.target.getArmor()), armourX, TEXT_BASE_Y + 1 + offsetFromMountBar, 0xFFFFFF, true);
-                    drawContext.drawTexture(RenderLayer::getGuiTextured, ARMOUR, armourX, TEXT_BASE_Y + offsetFromMountBar, 0f, 0f, 9, 9, 9, 9, 9, 9);
-                }
-
-                if (mountHealth != null) {
-                    String mountHealthString = String.format("%d/%d", Math.round(mountHealth.getCurrent()), Math.round(mountHealth.getMax()));
-                    int mountHealthWidth = MinecraftClient.getInstance().textRenderer.getWidth(mountHealthString) + 9;
-                    int expectedLeftPixel = BAR_X + BAR_WIDTH - mountHealthWidth - 3;
-
-                    if (expectedLeftPixel < armourX) expectedLeftPixel = armourX + 10;
-
-                    int mountHealthX = drawContext.drawText(MinecraftClient.getInstance().textRenderer, mountHealthString, expectedLeftPixel, TEXT_BASE_Y + 1 + MOUNT_BAR_HEIGHT, 0xFFFFFF, true);
-                    drawContext.drawTexture(RenderLayer::getGuiTextured, MOUNT_HEART, mountHealthX, TEXT_BASE_Y + MOUNT_BAR_HEIGHT, 0f, 0f, 9, 9, 9, 9, 9, 9);
-                }
-
-                if (Options.hudStatuses) {
-                    List<RegistryEntry<StatusEffect>> effects = ((IMixinLivingEntity)this.target).provi_Health$getClientSideStatusEffects();
-
-                    if (!effects.isEmpty()) {
-                        StatusEffectSpriteManager statusEffectSpriteManager = MinecraftClient.getInstance().getStatusEffectSpriteManager();
-                        int effectXOffset = 0;
-                        for (RegistryEntry<StatusEffect> effect : effects) {
-                            Sprite effectSprite = statusEffectSpriteManager.getSprite(effect);
-                            drawContext.drawSpriteStretched(RenderLayer::getGuiTextured, effectSprite, EFFECT_X + effectXOffset, EFFECT_BASE_Y + offsetFromMountBar, 16, 16);
-                            effectXOffset += EFFECT_X_OFFSET;
-                        }
-                    }
-                }
-
-                // Render titles on HUD
-                if (Options.hudTitles) {
-                    List<Text> titles = BorderRegistry.getTitle(this.target, false, true).reversed();
-
-                    int titleX = 5;
-                    int titleY = OFFSET_Y + FRAME_LENGTH + 5;
-
-                    if (Options.hudPosition == HUDPosition.LEFT) {
-                        for (Text title : titles) {
-                            drawContext.drawText(MinecraftClient.getInstance().textRenderer, title, titleX, titleY, 0xFFFFFF, true);
-                            titleY += 10;
-                        }
-                    }
-                    else {
-                        for (Text title : titles) {
-                            titleX = MinecraftClient.getInstance().getWindow().getScaledWidth() - 10 - MinecraftClient.getInstance().textRenderer.getWidth(title);
-                            drawContext.drawText(MinecraftClient.getInstance().textRenderer, title, titleX, titleY, 0xFFFFFF, true);
-                            titleY += 10;
-                        }
+                    for (Text title : titles) {
+                        titleX = MinecraftClient.getInstance().getWindow().getScaledWidth() - 10 - MinecraftClient.getInstance().textRenderer.getWidth(title);
+                        drawContext.drawText(MinecraftClient.getInstance().textRenderer, title, titleX, titleY, 0xFFFFFF, true);
+                        titleY += 10;
                     }
                 }
             }
-            
-            if (hudType != HUDType.NONE) {
-                // Render Portrait
-                if (Options.hudPosition == HUDPosition.LEFT) {
-                    this.drawTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, 0, OFFSET_Y, BACKGROUND_Z, 48f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Background
-                    this.drawTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, 0, OFFSET_Y, FOREGROUND_Z, 0f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Foreground
+        }
 
-                    drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), LEFT_TEXT_X, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
+        if (hudType != HUDType.NONE) {
+            // Render Portrait
+            if (Options.hudPosition == HUDPosition.LEFT) {
+                this.drawTexturedQuad(entityOptions.getBorder(this.target), drawContext, 0, OFFSET_Y, BACKGROUND_Z, 48f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Background
+                this.drawTexturedQuad(entityOptions.getBorder(this.target), drawContext, 0, OFFSET_Y, FOREGROUND_Z, 0f, 0f, FRAME_LENGTH, FRAME_LENGTH, FRAME_LENGTH * 2, FRAME_LENGTH); // Foreground
+
+                drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), LEFT_TEXT_X, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
+            }
+            else {
+                this.drawHorizontallyMirroredTexturedQuad(entityOptions.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, BACKGROUND_Z, 0.5f, 1f, 0f, 1f); // Background
+                this.drawHorizontallyMirroredTexturedQuad(entityOptions.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, FOREGROUND_Z, 0f, 0.5f, 0f, 1f); // Foreground
+
+                drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), OFFSET_X - 1 - nameWidth, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
+            }
+
+            // Render Paper Doll
+            if (Options.HUDCompat == HUDPortraitCompatMode.STANDARD) {
+                float prevTargetHeadYaw = this.target.headYaw;
+                float prevPrevTargetHeadYaw = this.target.lastHeadYaw;
+                float prevTargetBodyYaw = this.target.bodyYaw;
+                float prevPrevTargetBodyYaw = this.target.lastBodyYaw;
+
+                this.target.bodyYaw = Options.hudPosition.portraitYAW;
+                this.target.lastBodyYaw = Options.hudPosition.portraitYAW;
+                this.target.headYaw = Options.hudPosition.portraitYAW;
+                this.target.lastHeadYaw = Options.hudPosition.portraitYAW;
+
+                float renderHeight;
+                if (this.target.getEyeHeight(EntityPose.STANDING) >= this.target.getHeight() * 0.6) {
+                    renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.5f;
+                    if (renderHeight < 1f) renderHeight = 1f;
                 }
-                else {
-                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, BACKGROUND_Z, 0.5f, 1f, 0f, 1f); // Background
-                    this.drawHorizontallyMirroredTexturedQuad(BorderRegistry.getBorder(this.target), drawContext, OFFSET_X, OFFSET_X + FRAME_LENGTH, OFFSET_Y, OFFSET_Y + FRAME_LENGTH, FOREGROUND_Z, 0f, 0.5f, 0f, 1f); // Foreground
+                else renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.8f;
 
-                    drawContext.drawText(MinecraftClient.getInstance().textRenderer, this.getName(this.target), OFFSET_X - 1 - nameWidth, BAR_Y - BAR_HEIGHT, 0xFFFFFF, true); // Name
+                drawContext.enableScissor(OFFSET_X, OFFSET_Y, OFFSET_X + FRAME_LENGTH, OFFSET_Y + FRAME_LENGTH);
+                EntityHealthBar.enabled = false;
+                disabledLabels = true;
+                InventoryScreen.drawEntity(
+                    drawContext,
+                    24 + OFFSET_X, OFFSET_Y,
+                    30f,
+                    new Vector3f(0f, renderHeight, 0f),
+                    (new Quaternionf()).rotateZ(3.1415927f),
+                    null,
+                    this.target
+                );
+                EntityHealthBar.enabled = true;
+                disabledLabels = false;
+                drawContext.disableScissor();
+
+                this.target.headYaw = prevTargetHeadYaw;
+                this.target.lastHeadYaw = prevPrevTargetHeadYaw;
+                this.target.bodyYaw = prevTargetBodyYaw;
+                this.target.lastBodyYaw = prevPrevTargetBodyYaw;
+            }
+            else if (Options.HUDCompat == HUDPortraitCompatMode.COMPAT) {
+                float yawOffset = -(Options.hudPosition.portraitYAW - this.target.getBodyYaw()) / MathHelper.DEGREES_PER_RADIAN;
+
+                float renderHeight;
+                if (this.target.getEyeHeight(EntityPose.STANDING) >= this.target.getHeight() * 0.6) {
+                    renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.5f;
+                    if (renderHeight < 1f) renderHeight = 1f;
                 }
+                else renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.8f;
 
-                // Render Paper Doll
-                if (Options.HUDCompat == HUDPortraitCompatMode.STANDARD) {
-                    float prevTargetHeadYaw = this.target.headYaw;
-                    float prevPrevTargetHeadYaw = this.target.lastHeadYaw;
-                    float prevTargetBodyYaw = this.target.bodyYaw;
-                    float prevPrevTargetBodyYaw = this.target.lastBodyYaw;
-
-                    this.target.bodyYaw = Options.hudPosition.portraitYAW;
-                    this.target.lastBodyYaw = Options.hudPosition.portraitYAW;
-                    this.target.headYaw = Options.hudPosition.portraitYAW;
-                    this.target.lastHeadYaw = Options.hudPosition.portraitYAW;
-
-                    float renderHeight;
-                    if (this.target.getEyeHeight(EntityPose.STANDING) >= this.target.getHeight() * 0.6) {
-                        renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.5f;
-                        if (renderHeight < 1f) renderHeight = 1f;
-                    }
-                    else renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.8f;
-
-                    drawContext.enableScissor(OFFSET_X, OFFSET_Y, OFFSET_X + FRAME_LENGTH, OFFSET_Y + FRAME_LENGTH);
-                    EntityHealthBar.enabled = false;
-                    disabledLabels = true;
-                    InventoryScreen.drawEntity(
-                        drawContext,
-                        24 + OFFSET_X, OFFSET_Y,
-                        30f,
-                        new Vector3f(0f, renderHeight, 0f),
-                        (new Quaternionf()).rotateZ(3.1415927f),
-                        null,
-                        this.target
-                    );
-                    EntityHealthBar.enabled = true;
-                    disabledLabels = false;
-                    drawContext.disableScissor();
-
-                    this.target.headYaw = prevTargetHeadYaw;
-                    this.target.lastHeadYaw = prevPrevTargetHeadYaw;
-                    this.target.bodyYaw = prevTargetBodyYaw;
-                    this.target.lastBodyYaw = prevPrevTargetBodyYaw;
-                }
-                else if (Options.HUDCompat == HUDPortraitCompatMode.COMPAT) {
-                    float yawOffset = -(Options.hudPosition.portraitYAW - this.target.getBodyYaw()) / MathHelper.DEGREES_PER_RADIAN;
-
-                    float renderHeight;
-                    if (this.target.getEyeHeight(EntityPose.STANDING) >= this.target.getHeight() * 0.6) {
-                        renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.5f;
-                        if (renderHeight < 1f) renderHeight = 1f;
-                    }
-                    else renderHeight = this.target.getEyeHeight(this.target.getPose()) + 0.8f;
-
-                    drawContext.enableScissor(OFFSET_X, OFFSET_Y, OFFSET_X + FRAME_LENGTH, OFFSET_Y + FRAME_LENGTH);
-                    EntityHealthBar.enabled = false;
-                    disabledLabels = true;
-                    InventoryScreen.drawEntity(
-                        drawContext,
-                        24 + OFFSET_X,
-                        OFFSET_Y,
-                        30,
-                        new Vector3f(0f, renderHeight, 0f),
-                        (new Quaternionf()).rotateZ(3.1415927f).rotateY(yawOffset),
-                        null,
-                        this.target
-                    );
-                    EntityHealthBar.enabled = true;
-                    disabledLabels = false;
-                    drawContext.disableScissor();
-                }
+                drawContext.enableScissor(OFFSET_X, OFFSET_Y, OFFSET_X + FRAME_LENGTH, OFFSET_Y + FRAME_LENGTH);
+                EntityHealthBar.enabled = false;
+                disabledLabels = true;
+                InventoryScreen.drawEntity(
+                    drawContext,
+                    24 + OFFSET_X,
+                    OFFSET_Y,
+                    30,
+                    new Vector3f(0f, renderHeight, 0f),
+                    (new Quaternionf()).rotateZ(3.1415927f).rotateY(yawOffset),
+                    null,
+                    this.target
+                );
+                EntityHealthBar.enabled = true;
+                disabledLabels = false;
+                drawContext.disableScissor();
             }
         }
     }
@@ -312,7 +314,7 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         return this.currentVehicleHealthWidth;
     }
     
-    private void renderBar (DrawContext drawContext, int width, int barIndex) {
+    private void renderBar (DrawContext drawContext, Identifier texture, int width, int barIndex) {
         
         Vector3f startColour;
         LivingEntity entity = this.target;
@@ -355,15 +357,16 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         // ~ Passive and Default Aggression Level (all passive mobs and modded mobs that do not extend vanilla classes)
         else startColour = Options.unpackedDefaultStartHud;
 
-        Vector3f barColour = Options.getBarColour((float)width / (float)BAR_WIDTH, startColour, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
-        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
-        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (BAR_WIDTH - width), BAR_X + BAR_WIDTH, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
+        Vector3f barColour = Options.lerpBarColour((float)width / (float)BAR_WIDTH, startColour, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
+        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(texture, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
+        else this.drawHorizontallyMirroredTexturedQuad(texture, drawContext, BAR_X + (BAR_WIDTH - width), BAR_X + BAR_WIDTH, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
     }
 
-    private void renderMountBar (DrawContext drawContext, int width, int barIndex) {
-        Vector3f barColour = Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedDefaultStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
-        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
-        else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (MOUNT_BAR_WIDTH - width) + BAR_WIDTH_DIFF, BAR_X + BAR_WIDTH_DIFF + MOUNT_BAR_WIDTH, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
+    private void renderMountBar (DrawContext drawContext, Identifier texture, int width, int barIndex) {
+        Vector3f barColour = Options.lerpBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedDefaultStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
+        if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(texture, drawContext, BAR_X, BAR_X + width, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
+        else this.drawHorizontallyMirroredTexturedQuad(texture, drawContext, BAR_X + (MOUNT_BAR_WIDTH - width) + BAR_WIDTH_DIFF, BAR_X + BAR_WIDTH_DIFF + MOUNT_BAR_WIDTH, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
+
     }
 
     private void reset () {

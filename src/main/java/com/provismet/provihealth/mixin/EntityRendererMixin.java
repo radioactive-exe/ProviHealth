@@ -1,6 +1,6 @@
 package com.provismet.provihealth.mixin;
 
-import com.provismet.provihealth.hud.BorderRegistry;
+import com.provismet.provihealth.hud.ElementRegistry;
 import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
 import com.provismet.provihealth.interfaces.IMixinLivingEntity;
 import com.provismet.provihealth.util.Visibility;
@@ -8,7 +8,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -74,7 +73,7 @@ public abstract class EntityRendererMixin {
             if (entity.getDisplayName() != null) mixinState.provi_Health$setLabel(entity.getDisplayName());
             else mixinState.provi_Health$setLabel(entity.getName());
 
-            mixinState.provi_Health$setTitles(BorderRegistry.getTitle(living, true, false));
+            mixinState.provi_Health$setTitles(ElementRegistry.getTitle(living, true, false));
 
             // If another valid entity is riding this one, don't render a healthbar.
             if ((living.hasPassengers() &&

@@ -2,7 +2,7 @@ package com.provismet.provihealth;
 
 import com.provismet.provihealth.api.ProviHealthApi;
 import com.provismet.provihealth.config.Options;
-import com.provismet.provihealth.hud.BorderRegistry;
+import com.provismet.provihealth.hud.ElementRegistry;
 import com.provismet.provihealth.hud.TargetHealthBar;
 import com.provismet.provihealth.particle.Particles;
 import com.provismet.provihealth.util.StatusEffectIdentifier;
@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ public class ProviHealthClient implements ClientModInitializer {
         });
 
         HudLayerRegistrationCallback.EVENT.register(new TargetHealthBar());
+        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new ElementRegistry());
 
         FabricLoader.getInstance().getEntrypointContainers(MODID, ProviHealthApi.class).forEach(
             entrypoint -> {
@@ -44,7 +46,7 @@ public class ProviHealthClient implements ClientModInitializer {
                 }
             }
         );
-        BorderRegistry.sortTitles();
+        ElementRegistry.sortTitles();
 
         Options.load();
         Particles.init();

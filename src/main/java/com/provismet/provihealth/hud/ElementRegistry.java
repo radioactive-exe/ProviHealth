@@ -1,0 +1,247 @@
+package com.provismet.provihealth.hud;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.JsonOps;
+import com.provismet.provihealth.api.ProviHealthApi;
+import com.provismet.provihealth.config.resources.EntityOptions;
+import com.provismet.provihealth.config.resources.TagOptions;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.provismet.provihealth.ProviHealthClient;
+import com.provismet.provihealth.config.Options;
+
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Identifier;
+
+public class ElementRegistry implements SimpleSynchronousResourceReloadListener {
+    // Cached Elements
+    private static final HashMap<EntityType<?>, Identifier> borderCache = new HashMap<>();
+    private static final HashMap<EntityType<?>, ItemStack> iconCache = new HashMap<>();
+    private static final HashMap<EntityType<?>, EntityOptions> entityOptionCache = new HashMap<>();
+    private static final HashMap<TagKey<EntityType<?>>, TagOptions> tagOptionsCache = new HashMap<>();
+
+    // Prioritised HUD elements from dependent mods using the API
+    private static final HashMap<TagKey<EntityType<?>>, BorderPriority> tagBorderPriorities = new HashMap<>();
+    private static final HashMap<TagKey<EntityType<?>>, ItemPriority> tagIconPriorities = new HashMap<>();
+    private static final HashMap<EntityType<?>, BorderPriority> typeBorderPriorities = new HashMap<>();
+    private static final HashMap<EntityType<?>, ItemPriority> typeIconPriorities = new HashMap<>();
+
+    private static final List<TitlePriority> orderedTitles = new ArrayList<>();
+
+    public static final Identifier DEFAULT_BORDER = ProviHealthClient.identifier("textures/gui/healthbars/default.png");
+    public static final Identifier DEFAULT_BARS = ProviHealthClient.identifier("textures/gui/healthbars/bars.png");
+
+    @Override
+    public Identifier getFabricId () {
+        return ProviHealthClient.identifier("asset_listener");
+    }
+
+    @Override
+    public void reload (ResourceManager manager) {
+        entityOptionCache.clear();
+        tagOptionsCache.clear();
+        borderCache.clear();
+        iconCache.clear();
+
+        Registries.ENTITY_TYPE.getEntrySet().forEach(entry -> {
+            Identifier resourceLocation = entry.getKey().getValue().withPrefixedPath(ProviHealthClient.MODID + "/entity/").withSuffixedPath(".json");
+            Optional<Resource> resource = manager.getResource(resourceLocation);
+            if (resource.isPresent()) {
+                try (InputStream stream = resource.get().getInputStream()) {
+                    String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                    DataResult<Pair<EntityOptions, JsonElement>> dataResult = EntityOptions.CODEC.decode(JsonOps.INSTANCE, JsonParser.parseString(text));
+                    EntityOptions resolvedOptions = dataResult.getOrThrow().getFirst();
+                    entityOptionCache.put(entry.getValue(), resolvedOptions);
+                    ProviHealthClient.LOGGER.info("Found entity option with ID: {}", resourceLocation);
+                }
+                catch (Throwable e) {
+                    ProviHealthClient.LOGGER.error("ProviHealth encountered an error reading file {} from pack {}", resourceLocation, resource.get().getPackId(), e);
+                }
+            }
+        });
+
+        Map<Identifier, Resource> tagOptions = manager.findResources(ProviHealthClient.MODID + "/tag", identifier -> identifier.getPath().endsWith(".json"));
+        for (Map.Entry<Identifier, Resource> tagEntry : tagOptions.entrySet()) {
+            String path = tagEntry.getKey().getPath().replace(".json", "").replaceFirst("provihealth/tag/", "");
+            Identifier tagId = Identifier.of(tagEntry.getKey().getNamespace(), path);
+            TagKey<EntityType<?>> tagKey = TagKey.of(RegistryKeys.ENTITY_TYPE, tagId);
+            ProviHealthClient.LOGGER.info("Found tag options file {} for entity tag {}", tagEntry.getKey(), tagId);
+
+            try (InputStream stream = tagEntry.getValue().getInputStream()) {
+                String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                DataResult<Pair<TagOptions, JsonElement>> dataResult = TagOptions.CODEC.decode(JsonOps.INSTANCE, JsonParser.parseString(text));
+                TagOptions resolvedOptions = dataResult.getOrThrow().getFirst();
+                tagOptionsCache.put(tagKey, resolvedOptions);
+            }
+            catch (Throwable e) {
+                ProviHealthClient.LOGGER.error("ProviHealth encountered an error reading file {} from pack {}", tagEntry.getKey(), tagEntry.getValue().getPackId(), e);
+            }
+        }
+    }
+
+    public static boolean registerBorder (TagKey<EntityType<?>> entityTag, @Nullable Identifier border, int priority) {
+        if (entityTag == null) {
+            ProviHealthClient.LOGGER.error("Attempted to register a null object to the border registry.");
+            return false;
+        }
+        else if (tagBorderPriorities.containsKey(entityTag) && priority <= tagBorderPriorities.get(entityTag).priority()) {
+            return false;
+        }
+        tagBorderPriorities.put(entityTag, new BorderPriority(border, priority));
+        return true;
+    }
+
+    public static boolean registerItem (TagKey<EntityType<?>> entityTag, @Nullable ItemStack item, int priority) {
+        if (entityTag == null) {
+            ProviHealthClient.LOGGER.error("Attempted to register a null EntityGroup to the icon registry.");
+            return false;
+        }
+        else if (tagIconPriorities.containsKey(entityTag) && priority <= tagIconPriorities.get(entityTag).priority()) {
+            return false;
+        }
+        tagIconPriorities.put(entityTag, new ItemPriority(item, priority));
+        return true;
+    }
+
+    public static boolean registerBorder (EntityType<?> type, @Nullable Identifier border, int priority) {
+        if (type == null) {
+            ProviHealthClient.LOGGER.error("Attempted to register a null EntityType to the border registry.");
+            return false;
+        }
+        else if (typeBorderPriorities.containsKey(type) && priority <= typeBorderPriorities.get(type).priority()) {
+            return false;
+        }
+        typeBorderPriorities.put(type, new BorderPriority(border, priority));
+        return true;
+    }
+
+    public static boolean registerItem (EntityType<?> type, @Nullable ItemStack item, int priority) {
+        if (type == null) {
+            ProviHealthClient.LOGGER.error("Attempted to register a null EntityType to the icon registry.");
+            return false;
+        }
+        else if (typeIconPriorities.containsKey(type) && priority <= typeIconPriorities.get(type).priority()) {
+            return false;
+        }
+        typeIconPriorities.put(type, new ItemPriority(item, priority));
+        return true;
+    }
+
+    public static void registerTitle (ProviHealthApi.TitleGenerator titleGen, int order) {
+        orderedTitles.add(new TitlePriority(titleGen, order));
+    }
+
+    public static void sortTitles () {
+        orderedTitles.sort(Comparator.comparingInt(TitlePriority::order));
+    }
+
+    public static EntityOptions getEntityOptions (@Nullable LivingEntity entity) {
+        if (entity == null) return EntityOptions.DEFAULT;
+        return entityOptionCache.getOrDefault(entity.getType(), EntityOptions.DEFAULT);
+    }
+
+    // Only used as a fallback when EntityOptions doesn't have it.
+    public static @NotNull Identifier getOrCacheBorder (@Nullable LivingEntity entity) {
+        if (entity == null || !Options.useCustomHudPortraits) return DEFAULT_BORDER;
+        else {
+            if (borderCache.containsKey(entity.getType())) return borderCache.get(entity.getType());
+
+            int maxPriority = Integer.MIN_VALUE;
+            Identifier bestBorder = DEFAULT_BORDER;
+            // Read from assets
+            for (Map.Entry<TagKey<EntityType<?>>, TagOptions> entry : tagOptionsCache.entrySet()) {
+                if (entity.getType().isIn(entry.getKey()) && entry.getValue().getPriority() > maxPriority && entry.getValue().getBorder() != null) {
+                    bestBorder = entry.getValue().getBorder();
+                    maxPriority = entry.getValue().getPriority();
+                }
+            }
+
+            // Read from mod addons
+            for (TagKey<EntityType<?>> entityTag : tagBorderPriorities.keySet()) {
+                if (entity.getType().isIn(entityTag) && tagBorderPriorities.get(entityTag).priority() > maxPriority) {
+                    bestBorder = tagBorderPriorities.get(entityTag).borderId();
+                    maxPriority = tagBorderPriorities.get(entityTag).priority();
+                }
+            }
+
+            for (EntityType<?> type : typeBorderPriorities.keySet()) {
+                if (entity.getType() == type && typeBorderPriorities.get(type).priority() > maxPriority) {
+                    bestBorder = typeBorderPriorities.get(type).borderId();
+                    maxPriority = typeBorderPriorities.get(type).priority();
+                }
+            }
+
+            borderCache.put(entity.getType(), bestBorder);
+            return bestBorder;
+        }
+    }
+
+    // Only used as a fallback when EntityOptions doesn't have it.
+    @Nullable
+    public static ItemStack getOrCacheIcon (LivingEntity entity) {
+        if (entity == null) return null;
+        else if (iconCache.containsKey(entity.getType())) return iconCache.get(entity.getType());
+
+        ItemStack bestIcon = null;
+        int maxPriority = Integer.MIN_VALUE;
+
+        // Read from assets
+        for (Map.Entry<TagKey<EntityType<?>>, TagOptions> entry : tagOptionsCache.entrySet()) {
+            if (entity.getType().isIn(entry.getKey()) && entry.getValue().getPriority() > maxPriority && entry.getValue().getIcon(entity) != null) {
+                bestIcon = entry.getValue().getIcon(entity);
+                maxPriority = entry.getValue().getPriority();
+            }
+        }
+
+        // Read from mod addons
+        for (TagKey<EntityType<?>> entityTag : tagIconPriorities.keySet()) {
+            if (entity.getType().isIn(entityTag) && tagIconPriorities.get(entityTag).priority() > maxPriority) {
+                bestIcon = tagIconPriorities.get(entityTag).itemStack();
+                maxPriority = tagIconPriorities.get(entityTag).priority();
+            }
+        }
+
+        for (EntityType<?> type : typeIconPriorities.keySet()) {
+            if (entity.getType() == type && typeIconPriorities.get(type).priority() > maxPriority) {
+                bestIcon = typeIconPriorities.get(type).itemStack();
+                maxPriority = typeIconPriorities.get(type).priority();
+            }
+        }
+        iconCache.put(entity.getType(), bestIcon);
+        return bestIcon;
+    }
+
+    public static List<Text> getTitle (LivingEntity entity, boolean world, boolean hud) {
+        if (entity == null) return null;
+
+        return orderedTitles.stream().map(title -> title.titleGetter().apply(entity, world, hud)).filter(Objects::nonNull).toList();
+    }
+
+    private record ItemPriority (ItemStack itemStack, int priority) {}
+    private record BorderPriority (Identifier borderId, int priority) {}
+    private record TitlePriority (ProviHealthApi.TitleGenerator titleGetter, int order) {}
+}
