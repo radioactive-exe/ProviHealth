@@ -3,6 +3,8 @@ package com.provismet.provihealth.world;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
+import com.provismet.provihealth.interfaces.IMixinLivingEntity;
+
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
@@ -12,7 +14,12 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.passive.LlamaEntity;
+import net.minecraft.entity.mob.Angerable;
+import net.minecraft.entity.passive.TameableEntity;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.SeeThroughText;
@@ -186,6 +193,8 @@ public class EntityHealthBar {
 
         final float Z = (float)index * -0.0001f;
 
+        Entity entity = state.provi_Health$getEntityType(); // Store to avoid constant calls in checks
+
         if (Options.compatInWorld) {
             vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V); // Bottom-Right
             vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V); // Bottom-Left
@@ -200,8 +209,47 @@ public class EntityHealthBar {
             else if (Options.useTeamColours && state.provi_Health$getTeamColour() instanceof Integer teamColour) {
                 colour = Vec3d.unpackRgb(teamColour).toVector3f();
             }
+
+            // ? Llamas are neutral in behaviour but do not extend Angerable, so they need their own checks
+            // ? If a neutral mob is angered, the bar changes colours to hostile colours. To remove this, remove the null checks for getAngryAt()
+            // ? Neutrality is checked first, because Endermen, Zombie Piglins, and other Angerable AND HostileEntity mobs should be checked here
+            // ? before hostility, as they are not hostile unless provoked.
+            // ? Tameable Angerable mobs only appear with neutral colours if they are untamed. Once tamed they are passive
+            // ? Also, all Neutral untameable mobs are always neutral.
+
+            // ~ Neutral Aggression Level
+            else if (Options.useHudAggressionColours && (
+                // * If the target is a *non-angered* LlamaEntity
+                (entity instanceof LlamaEntity && !((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
+                // * If the target is a *non-angered* angerable mob, and is tameable but is not tamed
+                || (entity instanceof Angerable && !((Angerable)entity).hasAngerTime()
+                    && entity instanceof TameableEntity && !((TameableEntity)entity).isTamed())
+                // * If the target is a *non-angered* angerable mob, and is untameable
+                || (entity instanceof Angerable && !((Angerable)entity).hasAngerTime()
+                    && !(entity instanceof TameableEntity)))
+            ) {
+                colour = Options.getBarColour(healthPercentage, Options.unpackedNeutralStartWorld, Options.unpackedEndWorld, isMount);
+            }
+
+            // ~ Aggressive/Hostile Aggression Level
+            else if (Options.useWorldAggressionColours && 
+                // * If the target is a Hostile Entity
+                entity instanceof HostileEntity
+                // * If the target is an *angered* LlamaEntity
+                || (entity instanceof LlamaEntity && ((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
+                // * If the target is an *angered* angerable mob, and is tameable but is not tamed
+                || (entity instanceof Angerable && ((Angerable)entity).hasAngerTime()
+                    && entity instanceof TameableEntity && !((TameableEntity)entity).isTamed())
+                // * If the target is an *angered* angerable mob, and is untameable
+                || (entity instanceof Angerable && ((Angerable)entity).hasAngerTime() 
+                    && !(entity instanceof TameableEntity))
+            ) {
+                colour = Options.getBarColour(healthPercentage, Options.unpackedHostileStartWorld, Options.unpackedEndWorld, isMount);
+            }
+
+            // ~ Passive and Default Aggression Level (all passive mobs and modded mobs that do not extend vanilla classes), or all mobs if the aggression colour option is off
             else {
-                colour = Options.getBarColour(healthPercentage, Options.unpackedStartWorld, Options.unpackedEndWorld, Options.worldGradient);
+                colour = Options.getBarColour(healthPercentage, Options.unpackedDefaultStartWorld, Options.unpackedEndWorld, Options.worldGradient);
             }
 
             vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).color(colour.x, colour.y, colour.z, 1f); // Top-Left

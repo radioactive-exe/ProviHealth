@@ -33,6 +33,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.mob.Angerable;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.passive.LlamaEntity;
+import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -307,15 +311,57 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         this.currentVehicleHealthWidth += (int)((float)(trueValue - this.currentVehicleHealthWidth) * MathHelper.clamp(glideFactor, 0.001f, 1f));
         return this.currentVehicleHealthWidth;
     }
-
+    
     private void renderBar (DrawContext drawContext, int width, int barIndex) {
-        Vector3f barColour = Options.getBarColour((float)width / (float)BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
+        
+        Vector3f startColour;
+        LivingEntity entity = this.target;
+
+        System.out.println(((IMixinLivingEntity)this.target).provi_Health$getAnger());
+
+        if (barIndex == 1) startColour = Options.WHITE;
+        // ? Llamas are neutral in behaviour but do not extend Angerable, so they need their own checks
+        // ? If a neutral mob is angered, the bar changes colours to hostile colours. To remove this, remove the null checks for getAngryAt()
+        // ? Neutrality is checked first, because Endermen, Zombie Piglins, and other Angerable AND HostileEntity mobs should be checked here
+        // ? before hostility, as they are not hostile unless provoked.
+        // ? Tameable Angerable mobs only appear with neutral colours if they are untamed. Once tamed they are passive
+
+        // ~ Neutral Aggression Level
+        else if (Options.useHudAggressionColours && (
+            // * If the target is a *non-angered* but angerable tameable mob and is not tamed
+            (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && ((Angerable)entity).getAngryAt() == null)
+            // * If the target is a *non-angered* LlamaEntity
+            // || (entity instanceof LlamaEntity && !((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
+            || (entity instanceof LlamaEntity)
+            // * If the target is a *non-angered* but angerable untameable mob
+            || (entity instanceof Angerable && !(entity instanceof TameableEntity) && ((Angerable)entity).getAngryAt() == null))
+        ))  {
+            startColour = Options.unpackedNeutralStartHud;
+        }
+        
+
+        // ~ Aggressive/Hostile Aggression Level
+        else if (Options.useWorldAggressionColours && 
+            // * If the target is a Hostile Entity
+            entity instanceof HostileEntity
+            // * If the target is an *angered* LlamaEntity
+            // || (entity instanceof LlamaEntity && ((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
+            // * If the target is an *angered* Angerable entity
+            || (entity instanceof Angerable && ((Angerable)entity).getAngryAt() != null)
+        )  {
+            startColour = Options.unpackedHostileStartHud;
+        }
+
+        // ~ Passive and Default Aggression Level (all passive mobs and modded mobs that do not extend vanilla classes)
+        else startColour = Options.unpackedDefaultStartHud;
+
+        Vector3f barColour = Options.getBarColour((float)width / (float)BAR_WIDTH, startColour, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
         if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
         else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (BAR_WIDTH - width), BAR_X + BAR_WIDTH, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);
     }
 
     private void renderMountBar (DrawContext drawContext, int width, int barIndex) {
-        Vector3f barColour = Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
+        Vector3f barColour = Options.getBarColour((float)width / (float)MOUNT_BAR_WIDTH, barIndex == 1 ? Options.WHITE : Options.unpackedDefaultStartHud, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
         if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(BARS, drawContext, BAR_X, BAR_X + width, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
         else this.drawHorizontallyMirroredTexturedQuad(BARS, drawContext, BAR_X + (MOUNT_BAR_WIDTH - width) + BAR_WIDTH_DIFF, BAR_X + BAR_WIDTH_DIFF + MOUNT_BAR_WIDTH, BAR_Y + BAR_HEIGHT, BAR_Y + BAR_HEIGHT + MOUNT_BAR_HEIGHT, 0, 0f, ((float)width / (float)MOUNT_BAR_WIDTH) * MOUNT_BAR_U2, MOUNT_BAR_V1 + barIndex / 2f, MOUNT_BAR_V2 + barIndex / 2f, barColour);
     }
