@@ -223,7 +223,7 @@ public class EntityHealthBar {
                 || (entity instanceof Angerable && !((Angerable)entity).hasAngerTime()
                     && !(entity instanceof TameableEntity)))
             ) {
-                colour = Options.getBarColour(healthPercentage, Options.unpackedNeutralStartWorld, Options.unpackedEndWorld, isMount);
+                colour = Options.lerpBarColour(healthPercentage, Options.unpackedNeutralStartWorld, Options.unpackedEndWorld, isMount);
             }
 
             // ~ Aggressive/Hostile Aggression Level
@@ -239,7 +239,7 @@ public class EntityHealthBar {
                 || (entity instanceof Angerable && ((Angerable)entity).hasAngerTime() 
                     && !(entity instanceof TameableEntity))
             ) {
-                colour = Options.getBarColour(healthPercentage, Options.unpackedHostileStartWorld, Options.unpackedEndWorld, isMount);
+                colour = Options.lerpBarColour(healthPercentage, Options.unpackedHostileStartWorld, Options.unpackedEndWorld, isMount);
             }
 
             // ~ Passive and Default Aggression Level (all passive mobs and modded mobs that do not extend vanilla classes), or all mobs if the aggression colour option is off
