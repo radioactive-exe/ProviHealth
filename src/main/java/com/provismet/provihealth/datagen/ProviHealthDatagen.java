@@ -9,5 +9,6 @@ public class ProviHealthDatagen implements DataGeneratorEntrypoint {
         FabricDataGenerator.Pack pack = fabricDataGenerator.createPack();
         pack.addProvider(LanguageGenerator::new);
         pack.addProvider(LanguageGeneratorUK::new);
+        pack.addProvider(ParticleGenerator::new);
     }
 }
