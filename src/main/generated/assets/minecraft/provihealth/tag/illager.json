@@ -1,0 +1,8 @@
+{
+  "border": "provihealth:textures/gui/healthbars/illager.png",
+  "icon": {
+    "count": 1,
+    "id": "minecraft:iron_axe"
+  },
+  "priority": -999
+}

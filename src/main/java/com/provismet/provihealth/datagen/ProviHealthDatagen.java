@@ -10,5 +10,6 @@ public class ProviHealthDatagen implements DataGeneratorEntrypoint {
         pack.addProvider(LanguageGenerator::new);
         pack.addProvider(LanguageGeneratorUK::new);
         pack.addProvider(ParticleGenerator::new);
+        pack.addProvider(TagOptionsGenerator::new);
     }
 }
