@@ -3,7 +3,6 @@ package com.provismet.provihealth.config.resources;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.provismet.provihealth.config.Options;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.dynamic.Codecs;
@@ -18,7 +17,7 @@ public class TagOptions {
             Identifier.CODEC.optionalFieldOf("border").forGetter(options -> Optional.ofNullable(options.border)),
             Identifier.CODEC.optionalFieldOf("healthbar").forGetter(options -> Optional.ofNullable(options.healthBar)),
             ItemStack.CODEC.optionalFieldOf("icon").forGetter(options -> Optional.ofNullable(options.icon)),
-            Codecs.NON_EMPTY_STRING.optionalFieldOf("hudType").forGetter(options -> options.hudType == null ? Optional.empty() : Optional.of(options.hudType.name()))
+            Codecs.NON_EMPTY_STRING.optionalFieldOf("hudType").forGetter(options -> Optional.ofNullable(options.hudType).map(Enum::name))
         ).apply(instance, (priority, border, health, icon, hud) -> new TagOptions(
             priority,
             border.orElse(null),
@@ -58,12 +57,12 @@ public class TagOptions {
     }
 
     @Nullable
-    public ItemStack getIcon (LivingEntity entity) {
+    public ItemStack getIcon () {
         return this.icon;
     }
 
     @Nullable
-    public Options.HUDType getHudType (LivingEntity entity) {
+    public Options.HUDType getHudType () {
         return this.hudType;
     }
 }

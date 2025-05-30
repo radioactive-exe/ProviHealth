@@ -1,6 +1,29 @@
 package com.provismet.provihealth.hud;
 
-import java.io.IOException;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.JsonOps;
+import com.provismet.provihealth.ProviHealthClient;
+import com.provismet.provihealth.api.ProviHealthApi;
+import com.provismet.provihealth.config.Options;
+import com.provismet.provihealth.config.resources.EntityOptions;
+import com.provismet.provihealth.config.resources.TagOptions;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
+import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -11,44 +34,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.mojang.datafixers.util.Pair;
-import com.mojang.serialization.DataResult;
-import com.mojang.serialization.JsonOps;
-import com.provismet.provihealth.api.ProviHealthApi;
-import com.provismet.provihealth.config.resources.EntityOptions;
-import com.provismet.provihealth.config.resources.TagOptions;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.text.Text;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import com.provismet.provihealth.ProviHealthClient;
-import com.provismet.provihealth.config.Options;
-
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
-
 public class ElementRegistry implements SimpleSynchronousResourceReloadListener {
     // Cached Elements
-    private static final HashMap<EntityType<?>, Identifier> borderCache = new HashMap<>();
-    private static final HashMap<EntityType<?>, ItemStack> iconCache = new HashMap<>();
-    private static final HashMap<EntityType<?>, EntityOptions> entityOptionCache = new HashMap<>();
-    private static final HashMap<TagKey<EntityType<?>>, TagOptions> tagOptionsCache = new HashMap<>();
+    private static final Map<EntityType<?>, Identifier> borderCache = new HashMap<>();
+    private static final Map<EntityType<?>, ItemStack> iconCache = new HashMap<>();
+    private static final Map<EntityType<?>, Identifier> barCache = new HashMap<>();
+    private static final Map<EntityType<?>, Options.HUDType> hudCache = new HashMap<>();
+    private static final Map<EntityType<?>, EntityOptions> entityOptionCache = new HashMap<>(); // Preferred
+    private static final Map<TagKey<EntityType<?>>, TagOptions> tagOptionsCache = new HashMap<>(); // Used to feed the others data
 
     // Prioritised HUD elements from dependent mods using the API
-    private static final HashMap<TagKey<EntityType<?>>, BorderPriority> tagBorderPriorities = new HashMap<>();
-    private static final HashMap<TagKey<EntityType<?>>, ItemPriority> tagIconPriorities = new HashMap<>();
-    private static final HashMap<EntityType<?>, BorderPriority> typeBorderPriorities = new HashMap<>();
-    private static final HashMap<EntityType<?>, ItemPriority> typeIconPriorities = new HashMap<>();
+    private static final Map<TagKey<EntityType<?>>, BorderPriority> tagBorderPriorities = new HashMap<>();
+    private static final Map<TagKey<EntityType<?>>, ItemPriority> tagIconPriorities = new HashMap<>();
+    private static final Map<EntityType<?>, BorderPriority> typeBorderPriorities = new HashMap<>();
+    private static final Map<EntityType<?>, ItemPriority> typeIconPriorities = new HashMap<>();
 
     private static final List<TitlePriority> orderedTitles = new ArrayList<>();
 
@@ -165,7 +164,8 @@ public class ElementRegistry implements SimpleSynchronousResourceReloadListener 
     }
 
     // Only used as a fallback when EntityOptions doesn't have it.
-    public static @NotNull Identifier getOrCacheBorder (@Nullable LivingEntity entity) {
+    @NotNull
+    public static Identifier getOrCacheBorder (@Nullable LivingEntity entity) {
         if (entity == null || !Options.useCustomHudPortraits) return DEFAULT_BORDER;
         else {
             if (borderCache.containsKey(entity.getType())) return borderCache.get(entity.getType());
@@ -211,8 +211,8 @@ public class ElementRegistry implements SimpleSynchronousResourceReloadListener 
 
         // Read from assets
         for (Map.Entry<TagKey<EntityType<?>>, TagOptions> entry : tagOptionsCache.entrySet()) {
-            if (entity.getType().isIn(entry.getKey()) && entry.getValue().getPriority() > maxPriority && entry.getValue().getIcon(entity) != null) {
-                bestIcon = entry.getValue().getIcon(entity);
+            if (entity.getType().isIn(entry.getKey()) && entry.getValue().getPriority() > maxPriority && entry.getValue().getIcon() != null) {
+                bestIcon = entry.getValue().getIcon();
                 maxPriority = entry.getValue().getPriority();
             }
         }
@@ -233,6 +233,46 @@ public class ElementRegistry implements SimpleSynchronousResourceReloadListener 
         }
         iconCache.put(entity.getType(), bestIcon);
         return bestIcon;
+    }
+
+    @NotNull
+    public static Identifier getOrCacheHealthBar (LivingEntity entity) {
+        if (entity == null) return DEFAULT_BARS;
+        if (barCache.containsKey(entity.getType())) return barCache.get(entity.getType());
+
+        Identifier bestBars = DEFAULT_BARS;
+        int maxPriority = Integer.MIN_VALUE;
+
+        // Read from assets
+        for (Map.Entry<TagKey<EntityType<?>>, TagOptions> entry : tagOptionsCache.entrySet()) {
+            if (entity.getType().isIn(entry.getKey()) && entry.getValue().getPriority() > maxPriority && entry.getValue().getHealthBar() != null) {
+                bestBars = entry.getValue().getHealthBar();
+                maxPriority = entry.getValue().getPriority();
+            }
+        }
+
+        barCache.put(entity.getType(), bestBars);
+        return bestBars;
+    }
+
+    @Nullable
+    public static Options.HUDType getOrCacheHudType (LivingEntity entity) {
+        if (entity == null) return null;
+        if (hudCache.containsKey(entity.getType())) return hudCache.get(entity.getType());
+
+        Options.HUDType bestHud = null;
+        int maxPriority = Integer.MIN_VALUE;
+
+        // Read from assets
+        for (Map.Entry<TagKey<EntityType<?>>, TagOptions> entry : tagOptionsCache.entrySet()) {
+            if (entity.getType().isIn(entry.getKey()) && entry.getValue().getPriority() > maxPriority && entry.getValue().getHudType() != null) {
+                bestHud = entry.getValue().getHudType();
+                maxPriority = entry.getValue().getPriority();
+            }
+        }
+
+        hudCache.put(entity.getType(), bestHud);
+        return bestHud;
     }
 
     public static List<Text> getTitle (LivingEntity entity, boolean world, boolean hud) {
