@@ -319,7 +319,7 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         Vector3f startColour;
         LivingEntity entity = this.target;
 
-        System.out.println(((IMixinLivingEntity)this.target).provi_Health$getAnger());
+        // System.out.println(((IMixinLivingEntity)this.target).provi_Health$getAnger());
 
         if (barIndex == 1) startColour = Options.WHITE;
         // ? Llamas are neutral in behaviour but do not extend Angerable, so they need their own checks
@@ -332,8 +332,7 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         else if (Options.useHudAggressionColours && (
             // * If the target is a *non-angered* but angerable tameable mob and is not tamed
             (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && ((Angerable)entity).getAngryAt() == null)
-            // * If the target is a *non-angered* LlamaEntity
-            // || (entity instanceof LlamaEntity && !((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
+            // * If the target is a LlamaEntity
             || (entity instanceof LlamaEntity)
             // * If the target is a *non-angered* but angerable untameable mob
             || (entity instanceof Angerable && !(entity instanceof TameableEntity) && ((Angerable)entity).getAngryAt() == null))
@@ -346,8 +345,6 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         else if (Options.useWorldAggressionColours && 
             // * If the target is a Hostile Entity
             entity instanceof HostileEntity
-            // * If the target is an *angered* LlamaEntity
-            // || (entity instanceof LlamaEntity && ((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
             // * If the target is an *angered* Angerable entity
             || (entity instanceof Angerable && ((Angerable)entity).getAngryAt() != null)
         )  {

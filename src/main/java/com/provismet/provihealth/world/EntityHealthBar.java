@@ -214,8 +214,8 @@ public class EntityHealthBar {
 
             // ~ Neutral Aggression Level
             else if (Options.useHudAggressionColours && (
-                // * If the target is a *non-angered* LlamaEntity
-                (entity instanceof LlamaEntity && !((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
+                // * If the target is a LlamaEntity
+                (entity instanceof LlamaEntity)
                 // * If the target is a *non-angered* angerable mob, and is tameable but is not tamed
                 || (entity instanceof Angerable && !((Angerable)entity).hasAngerTime()
                     && entity instanceof TameableEntity && !((TameableEntity)entity).isTamed())
@@ -230,8 +230,6 @@ public class EntityHealthBar {
             else if (Options.useWorldAggressionColours && 
                 // * If the target is a Hostile Entity
                 entity instanceof HostileEntity
-                // * If the target is an *angered* LlamaEntity
-                || (entity instanceof LlamaEntity && ((IMixinLivingEntity)entity).provi_Health$isAngryAtPlayer())
                 // * If the target is an *angered* angerable mob, and is tameable but is not tamed
                 || (entity instanceof Angerable && ((Angerable)entity).hasAngerTime()
                     && entity instanceof TameableEntity && !((TameableEntity)entity).isTamed())
