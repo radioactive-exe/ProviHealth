@@ -36,6 +36,9 @@ import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.PiglinActivity;
+import net.minecraft.entity.mob.PiglinEntity;
+import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.LlamaEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -331,12 +334,18 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         // ~ Neutral Aggression Level
         else if (Options.useHudAggressionColours && (
             // * If the target is a *non-angered* but angerable tameable mob and is not tamed
-            (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && ((Angerable)entity).getAngryAt() == null)
+            (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && !((Angerable)entity).hasAngerTime())
             // * If the target is a LlamaEntity
             || (entity instanceof LlamaEntity)
             // * If the target is a *non-angered* but angerable untameable mob
-            || (entity instanceof Angerable && !(entity instanceof TameableEntity) && ((Angerable)entity).getAngryAt() == null))
+            || (entity instanceof Angerable && !(entity instanceof TameableEntity) && ((Angerable)entity).getAngryAt() == null) && ((Angerable)entity).getTarget() == null)
+            // * If the target is a non-angered Piglin
+            || (entity instanceof PiglinEntity && !
+                ((((PiglinEntity)entity).getActivity() == PiglinActivity.ATTACKING_WITH_MELEE_WEAPON)
+                || ((PiglinEntity)entity).getActivity() == PiglinActivity.CROSSBOW_CHARGE
+                || ((PiglinEntity)entity).getActivity() == PiglinActivity.CROSSBOW_HOLD))
         ))  {
+            if (entity instanceof ZombifiedPiglinEntity) System.out.println(((ZombifiedPiglinEntity)entity).getAngryAt());
             startColour = Options.unpackedNeutralStartHud;
         }
         
@@ -346,7 +355,7 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
             // * If the target is a Hostile Entity
             entity instanceof HostileEntity
             // * If the target is an *angered* Angerable entity
-            || (entity instanceof Angerable && ((Angerable)entity).getAngryAt() != null)
+            || (entity instanceof Angerable && ((Angerable)entity).hasAngerTime())
         )  {
             startColour = Options.unpackedHostileStartHud;
         }

@@ -91,6 +91,7 @@ public class Options {
 
     public static boolean spawnDamageParticles = true;
     public static boolean spawnHealingParticles = false;
+    public static boolean spawnKillText = true;
     public static int damageColour = 0xFF0000;
     public static int healingColour = 0x00FF00;
     public static Vector3f unpackedDamage = Vec3d.unpackRgb(damageColour).toVector3f();
@@ -203,6 +204,7 @@ public class Options {
             .append("particles", new JsonBuilder()
                 .append("damageParticles", spawnDamageParticles)
                 .append("healingParticles", spawnHealingParticles)
+                .append("killText", spawnKillText)
                 .append("damageColour", damageColour)
                 .append("damageAlpha", damageAlpha)
                 .append("healingColour", healingColour)
@@ -298,6 +300,7 @@ public class Options {
             }).ifPresent(json -> {
                 json.getBoolean("damageParticles").ifPresent(val -> spawnDamageParticles = val);
                 json.getBoolean("healingParticles").ifPresent(val -> spawnHealingParticles = val);
+                json.getBoolean("killText").ifPresent(val -> spawnKillText = val);
                 json.getInteger("damageColour").ifPresent(val -> damageColour = val);
                 json.getFloat("damageAlpha").ifPresent(val -> damageAlpha = val);
                 json.getInteger("healingColour").ifPresent(val -> healingColour = val);

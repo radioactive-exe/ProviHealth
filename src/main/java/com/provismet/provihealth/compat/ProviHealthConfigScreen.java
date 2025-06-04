@@ -356,6 +356,12 @@ public class ProviHealthConfigScreen {
             .build()
         );
 
+        particles.addEntry(entryBuilder.startBooleanToggle(Text.translatable("entry.provihealth.killText"), Options.spawnKillText)
+            .setDefaultValue(false)
+            .setSaveConsumer(newValue -> Options.spawnKillText = newValue)
+            .build()
+        );
+
         particles.addEntry(entryBuilder.startEnumSelector(Text.translatable("entry.provihealth.particleType"), DamageParticleType.class, Options.particleType)
             .setDefaultValue(DamageParticleType.RISING)
             .setSaveConsumer(newValue -> Options.particleType = newValue)

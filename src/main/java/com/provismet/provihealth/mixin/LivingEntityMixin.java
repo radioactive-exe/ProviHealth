@@ -104,10 +104,10 @@ public abstract class LivingEntityMixin extends Entity implements IMixinLivingEn
 
         final Entity cameraEntity = MinecraftClient.getInstance().getCameraEntity();
         if (cameraEntity != null && this != cameraEntity && this.distanceTo(MinecraftClient.getInstance().getCameraEntity()) <= Options.maxParticleDistance) {
-            if (this.container.getCurrent() <= 0 && this.container.getPrevious() == this.container.getMax() && Options.spawnDamageParticles) {
+            if (this.container.getCurrent() <= 0 && this.container.getPrevious() == this.container.getMax() && Options.spawnDamageParticles && Options.spawnKillText) {
                 this.getWorld().addParticleClient(new HealthParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale, Options.damageParticleTextColour, instantKillMessages[new Random().nextInt(instantKillMessages.length)]), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
             }
-            else if (this.container.getCurrent() <= 0 && this.container.getCurrent() < this.container.getPrevious() && Options.spawnDamageParticles) {
+            else if (this.container.getCurrent() <= 0 && this.container.getCurrent() < this.container.getPrevious() && Options.spawnDamageParticles && Options.spawnKillText) {
                 this.getWorld().addParticleClient(new HealthParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale, Options.damageParticleTextColour, deathMessages[new Random().nextInt(deathMessages.length)]), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
             }
             else if (this.container.getCurrent() < this.container.getPrevious() && Options.spawnDamageParticles) {

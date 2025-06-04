@@ -30,6 +30,7 @@
     "entry.provihealth.hudTitles": "Show Titles On HUD",
     "entry.provihealth.damageParticles": "Show Damage Particles",
     "entry.provihealth.healingParticles": "Show Healing Particles",
+    "entry.provihealth.killText": "Spawn Kill/Insta-kill text",
     "entry.provihealth.damageColour": "Damage Particle Color",
     "entry.provihealth.healingColour": "Healing Particle Color",
     "entry.provihealth.particleScale": "Particle Size",
