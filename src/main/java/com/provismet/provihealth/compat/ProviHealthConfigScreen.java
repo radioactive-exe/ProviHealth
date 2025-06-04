@@ -357,7 +357,7 @@ public class ProviHealthConfigScreen {
         );
 
         particles.addEntry(entryBuilder.startBooleanToggle(Text.translatable("entry.provihealth.killText"), Options.spawnKillText)
-            .setDefaultValue(false)
+            .setDefaultValue(true)
             .setSaveConsumer(newValue -> Options.spawnKillText = newValue)
             .build()
         );
