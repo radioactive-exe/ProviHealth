@@ -15,33 +15,27 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.passive.LlamaEntity;
 import net.minecraft.entity.mob.Angerable;
+import net.minecraft.entity.mob.EndermanEntity;
+import net.minecraft.entity.mob.HoglinEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.SeeThroughText;
-import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.font.TextRenderer.TextLayerType;
 import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.state.EntityRenderState;
-import net.minecraft.client.render.entity.state.LivingEntityRenderState;
-import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 import java.util.List;
 
@@ -214,29 +208,31 @@ public class EntityHealthBar {
 
             // ~ Neutral Aggression Level
             else if (Options.useHudAggressionColours && (
+                // * If the target is a *non-angered* but angerable tameable mob and is not tamed
+                (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && !((Angerable)entity).hasAngerTime()))
                 // * If the target is a LlamaEntity
-                (entity instanceof LlamaEntity)
-                // * If the target is a *non-angered* angerable mob, and is tameable but is not tamed
-                || (entity instanceof Angerable && !((Angerable)entity).hasAngerTime()
-                    && entity instanceof TameableEntity && !((TameableEntity)entity).isTamed())
-                // * If the target is a *non-angered* angerable mob, and is untameable
-                || (entity instanceof Angerable && !((Angerable)entity).hasAngerTime()
-                    && !(entity instanceof TameableEntity)))
-            ) {
+                || (entity instanceof LlamaEntity)
+                // * If the target is a *non-angered* Enderman - Endermen have their own Anger TrackedData
+                || (entity instanceof EndermanEntity && !((EndermanEntity)entity).isAngry())
+                // * If the target is a *non-angered* PiglinEntity (these entities are not Angerable, only HostileEntities)
+                || (entity instanceof PiglinEntity && !((MobEntity)entity).isAttacking())
+                // * If the target is a generic *non-angered* but angerable untameable mob (not an Enderman)
+                || (entity instanceof Angerable && !(entity instanceof TameableEntity) && !(entity instanceof EndermanEntity) && !((Angerable)entity).hasAngerTime() && !((MobEntity)entity).isAttacking())
+            )) {
                 colour = Options.lerpBarColour(healthPercentage, Options.unpackedNeutralStartWorld, Options.unpackedEndWorld, isMount);
             }
 
             // ~ Aggressive/Hostile Aggression Level
-            else if (Options.useWorldAggressionColours && 
-                // * If the target is a Hostile Entity
-                entity instanceof HostileEntity
-                // * If the target is an *angered* angerable mob, and is tameable but is not tamed
-                || (entity instanceof Angerable && ((Angerable)entity).hasAngerTime()
-                    && entity instanceof TameableEntity && !((TameableEntity)entity).isTamed())
-                // * If the target is an *angered* angerable mob, and is untameable
-                || (entity instanceof Angerable && ((Angerable)entity).hasAngerTime() 
-                    && !(entity instanceof TameableEntity))
-            ) {
+            else if (Options.useWorldAggressionColours && (
+                // * If the target is a Hostile Entity or a Hoglin (which are passive in terms of Class)
+                (entity instanceof HostileEntity || entity instanceof HoglinEntity)
+                // * If the target is an angered tameable mob and is not tamed
+                || (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && ((Angerable)entity).hasAngerTime()))
+                // * If the target is an angered Enderman
+                || (entity instanceof EndermanEntity && ((EndermanEntity)entity).isAngry())
+                // * If the target is a generic angered untameable mob
+                || (entity instanceof Angerable && !(entity instanceof TameableEntity) && (((Angerable)entity).hasAngerTime() || ((MobEntity)entity).isAttacking()))
+            )) {
                 colour = Options.lerpBarColour(healthPercentage, Options.unpackedHostileStartWorld, Options.unpackedEndWorld, isMount);
             }
 

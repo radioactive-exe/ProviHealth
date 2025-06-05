@@ -37,20 +37,12 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.brain.MemoryModuleState;
-import net.minecraft.entity.ai.brain.MemoryModuleType;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandler;
-import net.minecraft.entity.mob.AbstractPiglinEntity;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.EndermanEntity;
+import net.minecraft.entity.mob.HoglinEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PiglinActivity;
 import net.minecraft.entity.mob.PiglinEntity;
-import net.minecraft.entity.mob.ZombieVillagerEntity;
-import net.minecraft.entity.mob.ZombifiedPiglinEntity;
-import net.minecraft.entity.passive.AbstractHorseEntity;
 import net.minecraft.entity.passive.LlamaEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -352,41 +344,30 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
         else if (Options.useHudAggressionColours && (
             // * If the target is a *non-angered* but angerable tameable mob and is not tamed
             (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && !((Angerable)entity).hasAngerTime()))
-            // * If the target is a *non-angered* LlamaEntity
-            || (entity instanceof LlamaEntity && !((AbstractHorseEntity)entity).isAngry())
-            // * If the target is a *non-angered* Enderman
+            // * If the target is a LlamaEntity
+            || (entity instanceof LlamaEntity)
+            // * If the target is a *non-angered* Enderman - Endermen have their own Anger TrackedData
             || (entity instanceof EndermanEntity && !((EndermanEntity)entity).isAngry())
-            // * If the target is a *non-angered* but angerable untameable mob (not an Enderman)
-            || (entity instanceof Angerable && !(entity instanceof TameableEntity) && !(entity instanceof EndermanEntity) && !((Angerable)entity).hasAngerTime() && !((MobEntity)entity).isAttacking())
             // * If the target is a *non-angered* PiglinEntity (these entities are not Angerable, only HostileEntities)
             || (entity instanceof PiglinEntity && !((MobEntity)entity).isAttacking())
-            // * If the target is an unangered Zombie Piglin
-            // || (entity instanceof ZombifiedPiglinEntity && ((MobEntity)entity).isAttacking())
+            // * If the target is a generic *non-angered* but angerable untameable mob (not an Enderman)
+            || (entity instanceof Angerable && !(entity instanceof TameableEntity) && !(entity instanceof EndermanEntity) && !((Angerable)entity).hasAngerTime() && !((MobEntity)entity).isAttacking())
         ))  {
-            if (entity instanceof ZombifiedPiglinEntity) System.out.println(entity.getDataTracker().getChangedEntries().toString());
             startColour = Options.unpackedNeutralStartHud;
         }
 
-        // [SerializedEntry[id=9, serializer=net.minecraft.entity.data.TrackedDataHandler$$Lambda/0x00000172e092a0b8@b3bb18a, value=15.0], SerializedEntry[id=15, serializer=net.minecraft.entity.data.TrackedDataHandler$$Lambda/0x00000172e092a0b8@4c57b0e7, value=4]]
-
-        // [SerializedEntry[id=8, serializer=net.minecraft.entity.data.TrackedDataHandler$$Lambda/0x00000172e092a0b8@4c57b0e7, value=1], SerializedEntry[id=9, serializer=net.minecraft.entity.data.TrackedDataHandler$$Lambda/0x00000172e092a0b8@b3bb18a, value=15.0], SerializedEntry[id=15, serializer=net.minecraft.entity.data.TrackedDataHandler$$Lambda/0x00000172e092a0b8@4c57b0e7, value=4], SerializedEntry[id=18, serializer=net.minecraft.entity.data.TrackedDataHandler$$Lambda/0x00000172e092a0b8@7852d8ed, value=true]]
-        
-
         // ~ Aggressive/Hostile Aggression Level
-        else if (Options.useWorldAggressionColours && 
-            // * If the target is a Hostile Entity
-            (entity instanceof HostileEntity)
-            // * If the target is an angered angerable tameable mob and is not tamed
+        else if (Options.useWorldAggressionColours && (
+            // * If the target is a Hostile Entity, or a Hoglin (which are passive in the code)
+            (entity instanceof HostileEntity || entity instanceof HoglinEntity)
+            // * If the target is an angered tameable mob and is not tamed
             || (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && ((Angerable)entity).hasAngerTime()))
-            // * If the target is an angered LlamaEntity
-            || (entity instanceof LlamaEntity && ((AbstractHorseEntity)entity).isAngry())
             // * If the target is an angered Enderman
             || (entity instanceof EndermanEntity && ((EndermanEntity)entity).isAngry())
-            // * If the target is an angered angerable untameable mob
+            // * If the target is a generic angered untameable mob
             || (entity instanceof Angerable && !(entity instanceof TameableEntity) && (((Angerable)entity).hasAngerTime() || ((MobEntity)entity).isAttacking()))
-            // * If the target is an angered PiglinEntity (these entities are not Angerable, only HostileEntities)
-            || (entity instanceof PiglinEntity && ((MobEntity)entity).isAttacking())
-        )  {
+
+        ))  {
             startColour = Options.unpackedHostileStartHud;
         }
 

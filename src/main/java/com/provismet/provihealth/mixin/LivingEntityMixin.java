@@ -108,7 +108,7 @@ public abstract class LivingEntityMixin extends Entity implements IMixinLivingEn
                 this.getWorld().addParticleClient(new HealthParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale, Options.damageParticleTextColour, instantKillMessages[new Random().nextInt(instantKillMessages.length)]), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
             }
             else if (this.container.getCurrent() <= 0 && this.container.getCurrent() < this.container.getPrevious() && Options.spawnDamageParticles && Options.spawnKillText) {
-                this.getWorld().addParticleClient(new HealthParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale, Options.damageParticleTextColour, deathMessages[new Random().nextInt(deathMessages.length)]), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
+                this.getWorld().addParticleClient(new HealthParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale * 1.5f, Options.damageParticleTextColour, deathMessages[new Random().nextInt(deathMessages.length)]), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
             }
             else if (this.container.getCurrent() < this.container.getPrevious() && Options.spawnDamageParticles) {
                 this.getWorld().addParticleClient(new HealthParticleEffect(Options.unpackedDamage, Options.damageAlpha, Options.particleScale, Options.damageParticleTextColour, String.format("%d", (int)this.container.getPrevious() - (int)this.container.getCurrent())), this.getX(), this.getEyeY(), this.getZ(), 0f, 0f, 0f);
