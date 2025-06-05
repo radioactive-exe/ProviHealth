@@ -15,7 +15,7 @@ import net.minecraft.entity.passive.LlamaEntity;
 import net.minecraft.entity.passive.TameableEntity;
 
 public class FunctionalUtilities {
-    public static Vector3f deduceColour (LivingEntity entity) {
+    public static Vector3f deduceColour (LivingEntity entity, boolean inHud) {
 
         // ? Llamas are neutral in behaviour but do not extend Angerable, so they need their own checks
         // ? If a neutral mob is angered, the bar changes colours to hostile colours.
@@ -36,7 +36,8 @@ public class FunctionalUtilities {
             // * If the target is a generic *non-angered* but angerable untameable mob (not an Enderman)
             || (entity instanceof Angerable && !(entity instanceof TameableEntity) && !(entity instanceof EndermanEntity) && !((Angerable)entity).hasAngerTime() && !((MobEntity)entity).isAttacking())
         ))  {
-            return Options.unpackedNeutralStartHud;
+            if (inHud) return Options.unpackedNeutralStartHud;
+            else return Options.unpackedNeutralStartWorld;
         }
 
         // ~ Aggressive/Hostile Aggression Level
@@ -51,10 +52,12 @@ public class FunctionalUtilities {
             || (entity instanceof Angerable && !(entity instanceof TameableEntity) && (((Angerable)entity).hasAngerTime() || ((MobEntity)entity).isAttacking()))
 
         ))  {
-            return Options.unpackedHostileStartHud;
+            if (inHud) return Options.unpackedHostileStartHud;
+            else return Options.unpackedHostileStartWorld;
         }
 
         // ~ Passive and Default Aggression Level (all passive mobs and modded mobs that do not extend vanilla classes)
-        return Options.unpackedDefaultStartHud;
+        if (inHud) return Options.unpackedDefaultStartHud;
+        else return Options.unpackedDefaultStartWorld;
     }
 }
