@@ -3,7 +3,6 @@ package com.provismet.provihealth.config.resources;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.provismet.provihealth.config.Options;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.dynamic.Codecs;
@@ -15,11 +14,17 @@ public class TagOptions {
     public static final Codec<TagOptions> CODEC = RecordCodecBuilder.create(
         instance -> instance.group(
             Codec.INT.fieldOf("priority").forGetter(TagOptions::getPriority),
-            Identifier.CODEC.optionalFieldOf("border").forGetter(TagOptions::getOptionalBorder),
-            Identifier.CODEC.optionalFieldOf("healthbar").forGetter(TagOptions::getOptionalHealthBar),
-            ItemStack.CODEC.optionalFieldOf("icon").forGetter(TagOptions::getOptionalIcon),
-            Codecs.NON_EMPTY_STRING.optionalFieldOf("hudType").forGetter(TagOptions::getOptionalHudType)
-        ).apply(instance, (priority, border, health, icon, hud) -> new TagOptions(priority, border.orElse(null), health.orElse(null), icon.orElse(null), hud.orElse(null)))
+            Identifier.CODEC.optionalFieldOf("border").forGetter(options -> Optional.ofNullable(options.border)),
+            Identifier.CODEC.optionalFieldOf("healthbar").forGetter(options -> Optional.ofNullable(options.healthBar)),
+            ItemStack.CODEC.optionalFieldOf("icon").forGetter(options -> Optional.ofNullable(options.icon)),
+            Codecs.NON_EMPTY_STRING.optionalFieldOf("hudType").forGetter(options -> Optional.ofNullable(options.hudType).map(Enum::name))
+        ).apply(instance, (priority, border, health, icon, hud) -> new TagOptions(
+            priority,
+            border.orElse(null),
+            health.orElse(null),
+            icon.orElse(null),
+            hud.orElse(null)
+        ))
     );
 
     private final int priority;
@@ -37,40 +42,27 @@ public class TagOptions {
         else this.hudType = Options.HUDType.valueOf(hudType);
     }
 
-    private Optional<Identifier> getOptionalBorder () {
-        return Optional.ofNullable(this.border);
-    }
-
-    private Optional<Identifier> getOptionalHealthBar () {
-        return Optional.ofNullable(this.healthBar);
-    }
-
-    private Optional<ItemStack> getOptionalIcon () {
-        return Optional.ofNullable(this.icon);
-    }
-
-    private Optional<String> getOptionalHudType () {
-        if (hudType == null) return Optional.empty();
-        return Optional.of(this.hudType.name());
-    }
-
     public int getPriority () {
         return this.priority;
     }
 
-    public @Nullable Identifier getBorder () {
+    @Nullable
+    public Identifier getBorder () {
         return this.border;
     }
 
-    public @Nullable Identifier getHealthBar () {
+    @Nullable
+    public Identifier getHealthBar () {
         return this.healthBar;
     }
 
-    public @Nullable ItemStack getIcon (LivingEntity entity) {
+    @Nullable
+    public ItemStack getIcon () {
         return this.icon;
     }
 
-    public @Nullable Options.HUDType getHudType (LivingEntity entity) {
+    @Nullable
+    public Options.HUDType getHudType () {
         return this.hudType;
     }
 }

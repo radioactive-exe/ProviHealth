@@ -17,6 +17,7 @@
 	"environment": "client",
 	"entrypoints": {
 		"client": ["com.provismet.provihealth.ProviHealthClient"],
+		"fabric-datagen": ["com.provismet.provihealth.datagen.ProviHealthDatagen"],
 		"modmenu": ["com.provismet.provihealth.compat.ModMenuHook"],
 		"provihealth": ["com.provismet.provihealth.compat.SelfApiHook"]
 	},

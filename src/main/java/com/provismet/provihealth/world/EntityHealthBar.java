@@ -45,7 +45,6 @@ public class EntityHealthBar {
     public static boolean enabled = true;
 
     private static final Identifier BARS = ProviHealthClient.identifier("textures/gui/healthbars/in_world.png");
-    private static final Identifier COMPAT_BARS = ProviHealthClient.identifier("textures/gui/healthbars/in_world_coloured.png");
     private static final float TEXTURE_SIZE = 64;
     private static final int LIGHT = LightmapTextureManager.pack(15, 15);
     private static final int BACKGROUND_BAR_INDEX = 1;
@@ -184,6 +183,7 @@ public class EntityHealthBar {
 
         final float Z = (float)index * -0.0001f;
 
+
         Entity entity = state.provi_Health$getEntityType(); // Store to avoid constant calls in checks
 
         if (Options.compatInWorld) {
@@ -209,5 +209,11 @@ public class EntityHealthBar {
             vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
             vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
         }
+
+        int maxLight = 0xF000F0;
+        vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
+        vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Right
+        vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
+        vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
     }
 }

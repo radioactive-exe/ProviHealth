@@ -1,7 +1,11 @@
-## Changes
-- Updated the json config to be more readable.
-  - This update will reset your settings.
+Larger update to provide bug fixes and new data-driven functionality.
 
-## Known Issues
-- Health Bars do not render with shaders; this is still under investigation, but rendering is extremely obtuse and I can't find any documentation.
-  - The compatibility health bars have been temporarily disabled since they don't work anymore.
+## Additions
+- Added data-driven customisation.
+  - Resource packs can now be used to change the hud type, HUD health bars, portrait, and more for individual entity types and also tags.
+  - Includes data generators so dependent mods can easily add their own customisations.
+
+## Bugfixes
+- Adjusted health bar rendering to use vanilla's "text" rendering instead of the prior custom implementation.
+  - Resolves the incompatibility with Iris shaders.
+  - Should resolve other rendering incompatibilities too.
