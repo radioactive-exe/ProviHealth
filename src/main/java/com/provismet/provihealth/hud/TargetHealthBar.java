@@ -336,7 +336,7 @@ public class TargetHealthBar implements HudLayerRegistrationCallback, LayeredDra
 
         if (barIndex == 1) startColour = Options.WHITE;
 
-        else startColour = FunctionalUtilities.deduceColour(entity);
+        else startColour = FunctionalUtilities.deduceColour(entity, true);
 
         Vector3f barColour = Options.lerpBarColour((float)width / (float)BAR_WIDTH, startColour, Options.unpackedEndHud, barIndex == 0 && Options.hudGradient);
         if (Options.hudPosition == HUDPosition.LEFT) this.drawTexturedQuad(texture, drawContext, BAR_X, BAR_X + width, BAR_Y, BAR_Y + BAR_HEIGHT, 0, 0f, (float)width / (float)BAR_WIDTH, barIndex / 2f, BAR_V2 + barIndex / 2f, barColour);

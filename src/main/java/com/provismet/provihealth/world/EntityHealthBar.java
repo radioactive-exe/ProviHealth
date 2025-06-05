@@ -186,29 +186,16 @@ public class EntityHealthBar {
 
         Entity entity = state.provi_Health$getEntityType(); // Store to avoid constant calls in checks
 
-        if (Options.compatInWorld) {
-            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V); // Bottom-Right
-            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V); // Bottom-Left
-            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V); // Top-Left
-            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V); // Top-Right
+        
+        Vector3f colour;
+        if (!Options.tintBackground && index == 1) {
+            colour = Options.WHITE;
         }
-        else {
-            Vector3f colour;
-            if (!Options.tintBackground && index == 1) {
-                colour = Options.WHITE;
-            }
-            else if (Options.useTeamColours && state.provi_Health$getTeamColour() instanceof Integer teamColour) {
-                colour = Vec3d.unpackRgb(teamColour).toVector3f();
-            }
-
-            else colour = Options.lerpBarColour(healthPercentage, FunctionalUtilities.deduceColour((LivingEntity)entity), Options.unpackedEndWorld, isMount);
-
-            int maxLight = 0xF000F0;
-            vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
-            vertexConsumer.vertex(model, MAX_X, MIN_Y, Z).texture(MAX_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Right
-            vertexConsumer.vertex(model, MAX_X, MAX_Y, Z).texture(MAX_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Right
-            vertexConsumer.vertex(model, MIN_X, MAX_Y, Z).texture(MIN_U, MAX_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Bottom-Left
+        else if (Options.useTeamColours && state.provi_Health$getTeamColour() instanceof Integer teamColour) {
+            colour = Vec3d.unpackRgb(teamColour).toVector3f();
         }
+
+        else colour = Options.lerpBarColour(healthPercentage, FunctionalUtilities.deduceColour((LivingEntity)entity, false), Options.unpackedEndWorld, isMount);
 
         int maxLight = 0xF000F0;
         vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
