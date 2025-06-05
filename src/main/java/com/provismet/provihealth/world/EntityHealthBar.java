@@ -17,14 +17,6 @@ import org.joml.Vector3f;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PiglinEntity;
-import net.minecraft.entity.passive.LlamaEntity;
-import net.minecraft.entity.mob.Angerable;
-import net.minecraft.entity.mob.EndermanEntity;
-import net.minecraft.entity.mob.HoglinEntity;
-import net.minecraft.entity.passive.TameableEntity;
 import com.provismet.provihealth.ProviHealthClient;
 import com.provismet.provihealth.config.Options;
 import com.provismet.provihealth.config.Options.SeeThroughText;
