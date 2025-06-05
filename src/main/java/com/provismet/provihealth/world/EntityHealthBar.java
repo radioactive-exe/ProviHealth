@@ -4,6 +4,7 @@ import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.provismet.provihealth.interfaces.IMixinEntityRenderState;
 import com.provismet.provihealth.interfaces.IMixinLivingEntity;
+import com.provismet.provihealth.util.FunctionalUtilities;
 
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.state.EntityRenderState;
@@ -15,6 +16,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PiglinEntity;
@@ -199,48 +201,7 @@ public class EntityHealthBar {
                 colour = Vec3d.unpackRgb(teamColour).toVector3f();
             }
 
-            // ? Llamas are neutral in behaviour but do not extend Angerable, so they need their own checks
-            // ? If a neutral mob is angered, the bar changes colours to hostile colours. To remove this, remove the null checks for getAngryAt()
-            // ? Neutrality is checked first, because Endermen, Zombie Piglins, and other Angerable AND HostileEntity mobs should be checked here
-            // ? before hostility, as they are not hostile unless provoked.
-            // ? Tameable Angerable mobs only appear with neutral colours if they are untamed. Once tamed they are passive
-            // ? Also, all Neutral untameable mobs are always neutral.
-
-            // ~ Neutral Aggression Level
-            else if (Options.useHudAggressionColours && (
-                // * If the target is a *non-angered* but angerable tameable mob and is not tamed
-                (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && !((Angerable)entity).hasAngerTime()))
-                // * If the target is a LlamaEntity
-                || (entity instanceof LlamaEntity)
-                // * If the target is a *non-angered* Enderman - Endermen have their own Anger TrackedData
-                || (entity instanceof EndermanEntity && !((EndermanEntity)entity).isAngry())
-                // * If the target is a *non-angered* PiglinEntity (these entities are not Angerable, only HostileEntities)
-                || (entity instanceof PiglinEntity && !((MobEntity)entity).isAttacking())
-                // * If the target is a generic *non-angered* but angerable untameable mob (not an Enderman)
-                || (entity instanceof Angerable && !(entity instanceof TameableEntity) && !(entity instanceof EndermanEntity) && !((Angerable)entity).hasAngerTime() && !((MobEntity)entity).isAttacking())
-            )) {
-                colour = Options.lerpBarColour(healthPercentage, Options.unpackedNeutralStartWorld, Options.unpackedEndWorld, isMount);
-            }
-
-            // ~ Aggressive/Hostile Aggression Level
-            else if (Options.useWorldAggressionColours && (
-                // * If the target is a Hostile Entity or a Hoglin (which are passive in terms of Class)
-                (entity instanceof HostileEntity || entity instanceof HoglinEntity)
-                // * If the target is an angered tameable mob and is not tamed
-                || (entity instanceof Angerable && entity instanceof TameableEntity && !(((TameableEntity)(entity)).isTamed() && ((Angerable)entity).hasAngerTime()))
-                // * If the target is an angered Enderman
-                || (entity instanceof EndermanEntity && ((EndermanEntity)entity).isAngry())
-                // * If the target is a generic angered untameable mob
-                || (entity instanceof Angerable && !(entity instanceof TameableEntity) && (((Angerable)entity).hasAngerTime() || ((MobEntity)entity).isAttacking()))
-            )) {
-                colour = Options.lerpBarColour(healthPercentage, Options.unpackedHostileStartWorld, Options.unpackedEndWorld, isMount);
-            }
-
-            // ~ Passive and Default Aggression Level (all passive mobs and modded mobs that do not extend vanilla classes), or all mobs if the aggression colour option is off
-            else {
-                colour = Options.lerpBarColour(healthPercentage, Options.unpackedDefaultStartWorld, Options.unpackedEndWorld, Options.worldGradient);
-
-            }
+            else colour = Options.lerpBarColour(healthPercentage, FunctionalUtilities.deduceColour((LivingEntity)entity), Options.unpackedEndWorld, isMount);
 
             int maxLight = 0xF000F0;
             vertexConsumer.vertex(model, MIN_X, MIN_Y, Z).texture(MIN_U, MIN_V).light(maxLight).color(colour.x, colour.y, colour.z, 1f); // Top-Left
